@@ -1,0 +1,62 @@
+# ============================================
+# InternFlow - repository-wide Git ignore rules
+# ============================================
+
+# --- Dependencies ---
+node_modules/
+.pnp
+.pnp.js
+
+# --- Frontend build output (Next.js) ---
+frontend/.next/
+frontend/out/
+frontend/next-env.d.ts
+
+# --- Backend build output (Maven) ---
+backend/target/
+
+# --- Environment files and secrets ---
+# Local environment files are never committed (NFR-SEC-008).
+# Example/template files with placeholders ARE committed.
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+!.env.example
+!.env.*.example
+
+# --- Logs ---
+*.log
+logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# --- Test artifacts ---
+coverage/
+playwright-report/
+test-results/
+blob-report/
+
+# --- IDE and editor files ---
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+.project
+.classpath
+.settings/
+*.swp
+*.swo
+
+# --- OS files ---
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# --- Temporary files ---
+*.tmp
+*.temp
+*.bak
