@@ -11,14 +11,14 @@
 | Document Identifier | IF-DOC-SAD-001 |
 | Version | 1.0 |
 | Status | Draft — Pending Review (not approved) |
-| Last Updated | 2026-10-15 |
+| Last Updated | 2026-10-17 |
 | Purpose | Translate the approved-for-review requirements baseline (PRD, FRD, SRS) into an implementation-oriented technical design: architecture style, module boundaries, backend layering, frontend structure, authorization architecture, key workflows, API and integration boundaries, transaction and storage design, deployment and testing approach, and the open architecture decisions that remain. This document guides later implementation stages; it does not implement anything. |
 | Related Source Documents | PRD v1.0 — `docs/requirements/PRD.md` (baseline commit `9f91303`); FRD v1.0 — `docs/requirements/FRD.md` (commit `c8b8754`); SRS v1.0 — `docs/requirements/SRS.md` (commit `7ffeecc`); README — `README.md`. Companion deliverables: `docs/architecture/DDD.md` (Database Design Document), `docs/architecture/DECISIONS.md` (Technology and Architecture Decisions Record). |
 | Intended Audience | Project reviewer/stakeholder; the development team implementing the MVP; authors of the API Specification, Security Requirements, UI/UX Specification, Test Plan, and Deployment and Operations Guide. |
 
 **Review note:** This document is a draft pending human review and must not be treated as approved. It resolves no open decision. It does not modify the PRD, FRD, or SRS, and where those documents leave a matter open, this document records the gap rather than inventing a rule.
 
-**Status conventions** (consistent with FRD §2.4 and SRS §2.6): every architectural statement below carries one of **Confirmed** (established by PRD/FRD/SRS, source cited), **Derived** (follows necessarily from an established decision; flagged for review), **Proposed** (offered by this document because some design must exist; requires review before being treated as decided), **Open decision (OD-xx)** (genuinely unresolved in FRD §9, carried forward unchanged), or **Assumption (AS-xx)** (FRD §9.3; not approved). Architecture-specific suggestions are additionally labeled **Recommendation** and are never presented as confirmed.
+**Status conventions** (consistent with FRD §2.4 and SRS §2.6): every architectural statement below carries one of **Confirmed** (established by PRD/FRD/SRS, source cited), **Derived** (follows necessarily from an established decision; flagged for review), **Proposed** (offered by this document because some design must exist; requires review before being treated as decided), **Open decision (OD-xx)** (genuinely unresolved in FRD §9, carried forward unchanged), or **Assumption (AS-xx)** (FRD §9.3; not approved). Where a formerly **Proposed** item was approved at the Stage 1.6 planning review it is labeled **Approved** (IF-DEC-xx) — an architectural direction for the current baseline whose boundaries are recorded in `DECISIONS.md` §5, not a promotion to the requirements baseline. Architecture-specific suggestions are additionally labeled **Recommendation** and are never presented as confirmed.
 
 ## Table of Contents
 
@@ -135,7 +135,7 @@ Microservices are not proposed anywhere in this document. Reopening that decisio
 
 The 13 essential MVP modules are all represented below, whether scheduled for early or late implementation (PRD §7.3). For each module: primary responsibility, data it owns or manages, interactions, authorization/business-rule boundaries, and source requirements.
 
-> **Note on implementation structure:** the repository currently contains documentation only (`README.md` and `docs/requirements/`). The package boundaries in §5.14 are **recommendations for a future implementation**, not a description of existing code.
+> **Note on implementation structure:** as of Stage 1.4 this repository contained documentation only (`README.md` and `docs/requirements/`); the Stage 1.5 development foundation has since added `backend/` and `frontend/` skeletons (see `docs/development/SETUP.md`). The package boundaries in §5.14 are **recommendations for a future implementation**, not a description of existing code.
 
 ### 5.1 Module 1 — Authentication and Authorization
 
@@ -243,7 +243,7 @@ The 13 essential MVP modules are all represented below, whether scheduled for ea
 
 ### 5.14 Recommended package boundaries (recommendation, not existing code)
 
-A conventional Spring Boot modular layout is **recommended** for later implementation; nothing below exists yet, and the layout may be adjusted at Stage 1.5:
+A conventional Spring Boot modular layout is **recommended** for later implementation; the module packages below do not exist yet — the Stage 1.5 foundation created only the `shared/` package, and the remaining packages are added module by module as they gain code (see `docs/development/SETUP.md` §5):
 
 ```
 com.internflow
@@ -263,7 +263,7 @@ com.internflow
   shared/          # cross-cutting: error taxonomy mapping, pagination, clock, identifiers
 ```
 
-Each module exposes a service surface used by controllers and by other modules; module internals (entities, repositories) are not accessed directly across modules. This is a **Recommendation/Proposed** structure; whether Module 7 is merged into Module 6 is an implementation detail for Stage 1.5.
+Each module exposes a service surface used by controllers and by other modules; module internals (entities, repositories) are not accessed directly across modules. This is a **Recommendation/Proposed** structure; whether Module 7 is merged into Module 6 is an implementation detail. At Stage 1.5 the foundation recorded a proposed choice to keep a separate `review` package (revisitable) — see `docs/development/SETUP.md` §5.
 
 ## 6. Backend Layering and Responsibilities
 
@@ -278,7 +278,7 @@ A three-layer core (controller → service → repository) with cross-cutting co
 | Repositories and persistence | Spring Data JPA repositories; transaction boundaries via Spring's transaction management; constraint enforcement delegated to PostgreSQL where feasible (unique report per period — SRS-IF-08). | No business logic in repositories; no cascade deletions (PR-08, SRS-DR-012). |
 | Authentication and authorization | Spring Security authenticates requests; an authorization service evaluates role + record scope (own / assigned cohort / deployment) for each protected operation. | Session/token mechanics are **OD-15** and not fixed here (SAD §8). |
 | Validation and exception handling | Bean validation for input shape; service-layer business validation; a single exception-handling boundary mapping internal outcomes to the five FRD §7.1 failure categories (business validation, authorization, invalid transition, technical, configuration-missing). | Categories are functional, not wire formats; concrete codes/shapes belong to the API Specification (SRS-ERR-002, SRS-IF-04). Error text must not assert open policies (SRS-ERR-014). |
-| Notification delivery | Service records notification rows in the business transaction; email dispatch occurs without blocking the business outcome (post-commit, best-effort), with failures recorded. | Non-blocking is confirmed (FR-NOTIF-006); the dispatch mechanism is **Proposed** and retry/scheduling policy is **OD-09** (SAD §13). |
+| Notification delivery | Service records notification rows in the business transaction; email dispatch occurs without blocking the business outcome (post-commit, best-effort), with failures recorded. | Non-blocking is confirmed (FR-NOTIF-006); the dispatch mechanism is **Approved** (IF-DEC-17) and retry/scheduling policy is **OD-09** (SAD §13). |
 | Audit event recording | Written in the same transaction as the triggering action for the required event set; failure fails the action. | Confirmed: FR-AUDIT-001, FR-REVIEW-002, SRS-IF-09, NFR-REL-002. |
 | File-storage integration | A storage gateway behind the document module: authorize → validate → write/read private object storage → persist metadata. | No storage SDK types leak into controllers or entities (SAD §12). |
 
@@ -392,23 +392,23 @@ sequenceDiagram
 
 ### 9.3 Component interactions per event type
 
-| Event | Confirmed behavior (source) | Proposed internal implementation detail |
+| Event | Confirmed behavior (source) | Internal implementation detail (Proposed unless marked Approved) |
 |---|---|---|
 | Report submission / resubmission | Owner-only; state transition with timestamps; review history entry; audit event; coordinator notification; compliance re-evaluation (FR-REPORT-004/008; FR-REVIEW-002; FR-AUDIT-001; FR-COMP-007) | One database transaction covering state + history + audit + compliance rows; notification row written in the same transaction, email dispatched after commit. |
-| Faculty review (corrections / approve) | Assigned-cohort faculty only; feedback required for corrections; approver identity + timestamp recorded; audit + notification + compliance effects (FR-REVIEW-003/004) | Optimistic concurrency check on the report row so racing review actions yield exactly one effective transition (NFR-DAT-008, FRD §7.2 case 22) — **Proposed** mechanism, SAD §11. |
+| Faculty review (corrections / approve) | Assigned-cohort faculty only; feedback required for corrections; approver identity + timestamp recorded; audit + notification + compliance effects (FR-REVIEW-003/004) | Optimistic concurrency check on the report row so racing review actions yield exactly one effective transition (NFR-DAT-008, FRD §7.2 case 22) — **Approved** mechanism (IF-DEC-16), SAD §11. |
 | Document submission / review | Permission-checked private upload with metadata; audit `document.submitted`; coordinator notified; faculty records review action with actor/timestamp; compliance effect per **OD-05** interim rule (submission alone advances) (FR-DOC-002/005; FR-COMP-005) | Storage write first, metadata committed in the same transaction; storage failure leaves no document record (FR-DOC-002 AC3). |
-| Compliance recalculation | Re-evaluation on every compliance-relevant event; all displays derive from the same evaluation result; failures mark stale, never satisfied (FR-COMP-007, SRS-FR-004, NFR-REL-005) | Synchronous recalculation inside the triggering transaction (scale is one cohort) — **Proposed**; asynchronous alternative explicitly deferred to SRS/implementation if load requires it (FR-COMP-007). |
+| Compliance recalculation | Re-evaluation on every compliance-relevant event; all displays derive from the same evaluation result; failures mark stale, never satisfied (FR-COMP-007, SRS-FR-004, NFR-REL-005) | Synchronous recalculation inside the triggering transaction (scale is one cohort) — **Approved** (IF-DEC-15; the failure-handling policy — rollback vs. mark-stale — remains open per `DECISIONS.md` §5); asynchronous alternative explicitly deferred to SRS/implementation if load requires it (FR-COMP-007). |
 | Notification generation | One notification per event occurrence per recipient; recipients from record relationships; non-blocking failures (FR-NOTIF-001/002/006/007) | Unique key on (event occurrence, recipient) for duplicate prevention; email send attempted post-commit with failure recorded — retry policy remains **OD-09**. |
 | Completion verification | Eligibility from compliance; assigned-cohort faculty only; record with verifier, timestamp, evaluated requirement results; audit + notification; post-verification edits refused (FR-COMPLETE-001…005) | Completion record and internship state written in one transaction with the audit event; eligibility re-checked inside the transaction to close races — **Proposed**. |
-| Audit-history recording | Required events written atomically with the action; persistence failure fails the action; append-only; no application-level mutation (FR-AUDIT-001/005; NFR-REL-002) | Single `audit_events` table written through the same transaction manager; database-level write protection (e.g., revoke UPDATE/DELETE) evaluated at Stage 1.5 — **Recommendation**, not decided. |
+| Audit-history recording | Required events written atomically with the action; persistence failure fails the action; append-only; no application-level mutation (FR-AUDIT-001/005; NFR-REL-002) | Single `audit_events` table written through the same transaction manager; database-level write protection (e.g., revoke UPDATE/DELETE) to be evaluated in a later stage (not evaluated at Stage 1.5) — **Recommendation**, not decided. |
 
-The left column is **confirmed** by the source documents; the right column is **proposed** internal implementation detail that requires no requirement change and remains subject to review.
+The left column is **confirmed** by the source documents; the right column is **internal implementation detail** — **proposed** where it requires no requirement change and remains subject to review, and **Approved** where it corresponds to a decision approved at the Stage 1.6 review (IF-DEC-15, IF-DEC-16) within that decision's boundaries.
 
 ## 10. API and Integration Architecture
 
 This section states high-level intentions only. The **API Specification is a separate future deliverable**; no endpoint catalogue, payload schema, or status code is finalized here (SRS-IF-01, SRS-ERR-002).
 
-- **REST API responsibilities (Proposed style, confirmed boundary):** the frontend and backend communicate through a defined API boundary (SRS-IF-01). REST over JSON is the recommended style given the established stack and resource-oriented domain; it is marked **Proposed** in `DECISIONS.md` because the source documents do not fix the protocol style.
+- **REST API responsibilities (Approved style, confirmed boundary):** the frontend and backend communicate through a defined API boundary (SRS-IF-01). REST over JSON is the chosen style given the established stack and resource-oriented domain; it is **Approved** in `DECISIONS.md` (IF-DEC-12, bounded) — the style is approved while endpoint paths, payload schemas, and error shapes remain deferred to the API Specification.
 - **Request validation:** every mutating operation validates input at the server boundary before persistence and returns business-validation outcomes naming the offending field category (SRS-IF-03, NFR-SEC-005, FRD §7.2).
 - **Response DTOs:** responses use purpose-built DTOs, never persistence entities; workflow states are represented so clients cannot bypass the state model (SRS-IF-05).
 - **Error response consistency:** all errors map to the five FRD §7.1 categories (business validation, authorization, invalid transition, technical, configuration-missing) so callers can distinguish them (SRS-IF-04). Concrete status codes, error codes, and envelope shape are deferred to the API Specification; authorization failures must not disclose record content or existence (SRS-AUTH-004).
@@ -427,7 +427,7 @@ The backend domain modules persist to PostgreSQL through Spring Data JPA and Hib
 
 1. **Referential integrity:** every relationship (student → internship → cohort → requirement set; internship → reports/documents; report → review history; internship → completion) is a real foreign key with no cascade deletion (SRS-IF-07, NFR-DAT-001, SRS-DR-012).
 2. **Transactions around workflow transitions:** each state-changing operation (submit, resubmit, request corrections, approve, verify completion, deactivate user, role change, requirement change) executes as one transaction that includes: the state change, its history entry, the required audit event, and the affected compliance re-evaluation (SRS-IF-09, NFR-REL-002, FR-REVIEW-002, FR-AUDIT-001). If audit/history persistence fails, the action fails with no state change (FRD §7.2 case 28).
-3. **Consistent compliance calculations:** derived compliance rows are updated in the same transaction as the triggering event (**Proposed** synchronous strategy; scale justifies it) so no surface can show a result contradicting recorded state (FR-COMP-007, NFR-DAT-006, NFR-PERF-004). If evaluation fails, results are marked stale/unevaluated and re-processed — never silently satisfied (NFR-REL-005).
+3. **Consistent compliance calculations:** derived compliance rows are updated in the same transaction as the triggering event (**Approved** synchronous strategy — IF-DEC-15; the failure-handling policy remains open; scale justifies it) so no surface can show a result contradicting recorded state (FR-COMP-007, NFR-DAT-006, NFR-PERF-004). If evaluation fails, results are marked stale/unevaluated and re-processed — never silently satisfied (NFR-REL-005).
 4. **Protection against unauthorized or invalid state transitions:** invalid transitions are rejected by the service layer's state machine; authorization is checked before any logic (SRS-AUTH-001). Database constraints back the invariants that are mechanically checkable — one report per internship-period (unique constraint, atomic — SRS-DR-010), state/role/date check constraints — while role, scope, and eligibility rules necessarily live in the service layer (SAD §11 note below; DDD §10).
 5. **Reliable audit recording:** required audit events share the transaction of their action; application workflows expose no update/delete path for audit rows (FR-AUDIT-005, NFR-AUD-004). Additional database-level write protection is a **Recommendation**, not a decided control.
 6. **Database constraints for critical invariants:** uniqueness, foreign keys, NOT NULL on critical fields, and check constraints for enumerated values and date ordering (FR-INT-003, FR-REPORT-006). Constraints that cannot be expressed (e.g., "only assigned faculty may approve") remain service-layer rules with dedicated tests (DDD §10).
@@ -452,7 +452,7 @@ The backend domain modules persist to PostgreSQL through Spring Data JPA and Hib
 - **Failure handling:** delivery is non-blocking — a failed email never rolls back or blocks the business action; the failure is recorded for operational visibility (FR-NOTIF-006, NFR-REL-004, SRS-IF-14). Retry policy, delivery guarantees, and timing remain **OD-09**; no retry count or schedule is assumed (**P10**).
 - **Duplicate prevention:** at most one notification per event occurrence per recipient, including retries (FR-NOTIF-007, NFR-REL-006) — implemented as a unique key on (event occurrence, recipient) in the database (**Proposed** mechanism; DDD §4 `notifications`).
 - **Separation from workflow correctness:** notification generation/reads never gate a workflow transition; core correctness depends only on business tables (FR-NOTIF-006, **P8**).
-- **No message broker or background-job platform (Proposed decision IF-DEC-17):** the requirements demonstrate no need for one at single-cohort scale; in-app rows live in PostgreSQL and email dispatch is an in-process, post-commit, best-effort step. If **OD-09** later introduces scheduled deadline reminders or retry queues, Spring's built-in scheduling is the first option to evaluate before any external infrastructure — recorded as an open implementation choice, not a decision.
+- **No message broker or background-job platform (Approved decision IF-DEC-17; OD-09 delivery, retry, and scheduling remain open):** the requirements demonstrate no need for one at single-cohort scale; in-app rows live in PostgreSQL and email dispatch is an in-process, post-commit, best-effort step. If **OD-09** later introduces scheduled deadline reminders or retry queues, Spring's built-in scheduling is the first option to evaluate before any external infrastructure — recorded as an open implementation choice, not a decision.
 - **Unresolved implementation choices (carried, not decided):** retry/backoff policy and delivery guarantees (**OD-09**); reminder timing/frequency (**OD-09/OD-10**); the transport configuration of the email service (SRS-IF-17); notification retention (**OD-11**); the scheduler mechanism if reminders are required (**OD-09**).
 
 ## 14. Auditability and Observability
@@ -463,7 +463,7 @@ Three distinct concerns must not be conflated:
 |---|---|---|---|
 | **Business audit history** | Durable record of important actions/decisions for traceability, reviewable by authorized users. | `audit_events` written atomically with the action (required set), append-only through application workflows, actor + entity + timestamp + before/after values, viewer mapping per **OD-06**, retention per **OD-11** (none asserted). | FR-AUDIT-001…006; NFR-AUD-001…006 |
 | **Application logs** | Operational diagnostic output of the running backend/frontend. | Standard structured logging of requests, outcomes, and failures at appropriate levels. **Never** log passwords, credential material, access tokens/session identifiers, document content, or full sensitive payloads; log references (entity ids, event types) instead. Log destination/retention is an operations concern (not specified here; no retention duration invented). | Derived from PRD §12 (protection of sensitive data), NFR-SEC-008, FR-NOTIF-003 (minimization principle) |
-| **Operational monitoring** | Uptime, health, error-rate observation of the deployed system. | A basic health endpoint for hosting readiness is **Proposed**; no APM/vendor tool is selected, no uptime target or SLA exists (**NFR-REL-008**), and no monitoring platform is introduced without a demonstrated requirement. | PRD §12, §18.3; SRS §7.3 |
+| **Operational monitoring** | Uptime, health, error-rate observation of the deployed system. | A basic health endpoint for hosting readiness is **Approved** (IF-DEC-18; no uptime target, log-retention period, or monitoring vendor is committed); no APM/vendor tool is selected, no uptime target or SLA exists (**NFR-REL-008**), and no monitoring platform is introduced without a demonstrated requirement. | PRD §12, §18.3; SRS §7.3 |
 
 - **What gets audited (Confirmed required set):** `report.submitted`, `report.correction_requested`, `report.resubmitted`, `report.approved`, `document.submitted`, `completion.verified`, `user.created`, `user.role_changed`, `requirement.created`, `requirement.updated`, `cohort.created`, `cohort.updated`, `cohort.coordinator_assigned` (FR-AUDIT-001). The extended set (denied attempts, exports, membership changes, document replacement/review, deactivation) is **Proposed pending OD-06**.
 - **Immutability, retention, and visibility are separate:** immutability is confirmed application-wide (FR-AUDIT-005); visibility mapping is open (**OD-06**); retention duration is open (**OD-11**) and no purge operation exists in the MVP (interim posture only, not a policy — FR-AUDIT-006).
@@ -487,7 +487,7 @@ Three distinct concerns must not be conflated:
 - PostgreSQL and object storage are reachable only by the backend (credentials/URLs in externalized configuration; never in source control — NFR-SEC-008). The database is not exposed to the public internet or the frontend.
 - The email service is reached outbound-only from the backend.
 - Secrets (database, storage, email) are supplied via environment-specific configuration managed by the hosting providers (NFR-SEC-008; concrete mechanism deferred to Security Requirements/Deployment Guide).
-- Environment separation (local, test, demonstration) with per-environment configuration is a **Recommendation** for Stage 1.5.
+- Environment separation (local, test, demonstration) with per-environment configuration is a **Recommendation** for a later implementation stage (Stage 1.5 delivered only the placeholder environment templates described in `docs/development/SETUP.md`).
 - Backup frequency, recovery objectives, uptime targets, and performance targets are **not established** and are deliberately absent (PRD §18.3; NFR-REL-008; NFR-PERF-002).
 
 No specific backend hosting provider is selected in this document, and nothing here should be read as claiming the application has been deployed.
@@ -500,7 +500,7 @@ No specific backend hosting provider is selected in this document, and nothing h
 |---|---|---|---|
 | Unit tests | JUnit | State-machine transitions (T1–T10 and invalid attempts), editability rules, compliance evaluation rules, eligibility computation, CSV escaping/formula neutralization. | High — first major milestone logic |
 | Integration tests (Spring Boot Test) | Spring Boot Test | Service + repository + transaction behavior: audit atomicity (FR-AUDIT-001), history append-only, notification non-blocking, compliance re-evaluation, technical-failure rollbacks. | High |
-| Database-related tests | Spring Boot Test against a PostgreSQL test database (test-database mechanism to be chosen at Stage 1.5 — no additional tool is adopted here without approval) | Unique report-per-period under concurrency, referential constraints, check constraints, optimistic-lock behavior. | High |
+| Database-related tests | Spring Boot Test against a PostgreSQL test database (test-database mechanism still to be chosen — Stage 1.5 did not adopt one; no additional tool is adopted here without approval) | Unique report-per-period under concurrency, referential constraints, check constraints, optimistic-lock behavior. | High |
 | Authorization tests | JUnit + Spring Boot Test (mock MVC/API tests) | Every Denied and Conditional cell of FRD §4 for each role; direct-reference and parameter-manipulation attempts (scope leaks); administrator denied report approval and (default) completion verification; faculty without cohort assignment denied review. | **Highest — critical invariants** |
 | Workflow tests | JUnit / Spring Boot Test | The first major milestone end-to-end at service level: submit → corrections → resubmit → approve → compliance update; ineligible completion rejection with outstanding list; duplicate submission idempotency (T8); racing approvals (exactly one wins). | **Highest** |
 | API tests | Spring Boot Test / API-level tests | Validation at boundary, error-category mapping, pagination/scope filtering, response DTOs, no entity leakage. | High |
@@ -514,22 +514,22 @@ No specific backend hosting provider is selected in this document, and nothing h
 
 Modular monolith; Next.js/React/TypeScript/Tailwind frontend; Java/Spring Boot backend; Spring Security; PostgreSQL; Spring Data JPA/Hibernate; private object storage; email + in-app notifications; Vercel frontend hosting; JUnit/Spring Boot Test/Playwright; server-side authorization enforcement; atomic audit-with-action; no deletion of internships/reports/documents/cohorts (PR-08 confirmed at SRS level as SRS-FR-009); five report states with the FRD §5.2 transitions; faculty-only weekly-report approval; completion requires all mandatory requirements satisfied plus authorized (faculty, assigned-cohort) verification. Full detail in `docs/architecture/DECISIONS.md`.
 
-### 17.2 Recommendations by this document (require review, not yet decisions)
+### 17.2 Recommendations by this document (require review unless marked approved)
 
 | # | Recommendation | Where |
 |---|---|---|
 | R1 | Three-layer backend structure with a single service-layer home for rules; no deeper layering. | SAD §6 |
 | R2 | Module-per-package layout (`com.internflow.<module>`) as in §5.14. | SAD §5.14 |
-| R3 | Synchronous in-transaction compliance recalculation and audit writes. | SAD §9.3, §11 |
-| R4 | Optimistic locking on workflow entities to satisfy exactly-one-transition (NFR-DAT-008). | SAD §11; DDD §11 |
-| R5 | Post-commit, best-effort in-process email dispatch; no broker/job platform in the MVP. | SAD §13 |
+| R3 | Synchronous in-transaction compliance recalculation and audit writes. The compliance-recalculation part is now **Approved** (IF-DEC-15); audit atomicity is Confirmed. | SAD §9.3, §11 |
+| R4 | Optimistic locking on workflow entities to satisfy exactly-one-transition (NFR-DAT-008). Now **Approved** (IF-DEC-16). | SAD §11; DDD §11 |
+| R5 | Post-commit, best-effort in-process email dispatch; no broker/job platform in the MVP. Now **Approved** (IF-DEC-17); delivery/retry/scheduling remains open (OD-09). | SAD §13 |
 | R6 | Downloads via backend-streamed, permission-checked responses or short-lived signed URLs — decide at API Specification. | SAD §12 |
 | R7 | Database-level write protection on `audit_events` (revoke UPDATE/DELETE) in addition to application-level refusal. | SAD §14 |
 | R8 | Single typed API client module in the frontend; route groups per role. | SAD §7 |
 
-### 17.3 Proposed decisions requiring explicit approval
+### 17.3 Approved decisions (formerly Proposed; approved at the Stage 1.6 planning review)
 
-REST as the API style (IF-DEC-12); single persisted derived compliance source (`requirement_evaluations`) (IF-DEC-13); compliance synchronous, in-transaction recalculation (IF-DEC-15); optimistic locking (IF-DEC-16); no message broker in MVP (IF-DEC-17); health endpoint and basic structured logging (IF-DEC-18). API versioning (IF-DEC-14) remains **Open** pending the API Specification. None is confirmed until approved.
+The following are **Approved** architectural directions for the current baseline, with boundaries recorded in `DECISIONS.md` §5: REST as the API style (IF-DEC-12, bounded — endpoint contracts deferred to the API Specification); a single persisted derived compliance source (`requirement_evaluations`) (IF-DEC-13, bounded — OD-04 remains open); synchronous in-transaction compliance recalculation (IF-DEC-15, bounded — the failure-handling policy remains open); optimistic locking (IF-DEC-16); no message broker or external job queue in the MVP (IF-DEC-17, bounded — OD-09 remains open); health endpoint and basic structured logging (IF-DEC-18, bounded — no SLA/retention invented). Approval does not promote these to the requirements baseline. API versioning (IF-DEC-14) remains **Open** pending the API Specification.
 
 ### 17.4 Open questions (carried from source documents; unresolved here)
 
@@ -565,7 +565,7 @@ Also open: backend hosting provider, database hosting provider, storage provider
 | Dependency availability | PostgreSQL, object storage, email service, hosting must be configured in time (PRD §14.2). | Integration seams are isolated (storage gateway, email abstraction) so providers can be selected late. |
 | Inconsistent requirements across documents | PRD/FRD/SRS contradiction would produce design error. | Cross-check performed for this deliverable (SAD §18); no contradiction identified — see Stage 1.4 review report. |
 | Testing gaps on role boundaries | Missing authorization tests would let defects reach the demonstration. | SAD §16 marks authorization/workflow tests as highest priority. |
-| Notification non-blocking vs. audit atomicity tension | Email must not block, audit must be atomic. | Solved by splitting: business rows + notification row + audit in one transaction; email dispatch after commit (Proposed). |
+| Notification non-blocking vs. audit atomicity tension | Email must not block, audit must be atomic. | Solved by splitting: business rows + notification row + audit in one transaction; email dispatch after commit (**Approved** — IF-DEC-17; delivery guarantees and retry remain open under OD-09). |
 | Derived compliance staleness | Persisted derived data can drift if events are missed. | Recalculation in the triggering transaction; stale flag on failure; single derived source (IF-DEC-13). |
 
 ## 18. Traceability

@@ -11,17 +11,18 @@
 | Document Identifier | IF-DOC-DEC-001 |
 | Version | 1.0 |
 | Status | Draft — Pending Review (not approved) |
-| Last Updated | 2026-10-15 |
+| Last Updated | 2026-10-17 |
 | Purpose | Record every technology and architecture decision relevant to the InternFlow MVP — what is confirmed by the requirements baseline, what is proposed by this document and awaits approval, and what remains open — with context, rationale, consequences, alternatives, and traceability to the source requirements. This document decides nothing by itself; approval belongs to human review. |
 | Related Source Documents | PRD v1.0 — `docs/requirements/PRD.md` (baseline commit `9f91303`); FRD v1.0 — `docs/requirements/FRD.md` (commit `c8b8754`); SRS v1.0 — `docs/requirements/SRS.md` (commit `7ffeecc`); README — `README.md`. Companion deliverables: `docs/architecture/SAD.md` (System Architecture Document), `docs/architecture/DDD.md` (Database Design Document). |
 | Intended Audience | Project reviewer/stakeholder approving the architecture baseline; the development team implementing the MVP; authors of the API Specification, Security Requirements, Test Plan, and Deployment and Operations Guide. |
 
-**Review note:** This document is a draft pending human review and must not be treated as approved. Every entry marked **Proposed** or **Open** is unresolved until a reviewer signs it off (§11). It does not modify the PRD, FRD, or SRS, invents no requirement IDs, retention periods, SLAs, reporting cadences, or endpoint contracts, and where the source documents leave a matter open, it records the gap rather than inventing a rule.
+**Review note:** This document remains a draft pending human review and must not be treated as wholesale-approved. At the Stage 1.6 planning review (2026-10-17) the six formerly **Proposed** entries (IF-DEC-12, IF-DEC-13, IF-DEC-15, IF-DEC-16, IF-DEC-17, IF-DEC-18) were **approved with the boundaries recorded in §5**, and the AS-01/AS-02/AS-03 dependency note (§8) was accepted (assumptions remain assumptions — §8). Every entry marked **Open** and the remaining §11 review actions are unresolved until a reviewer signs them off. It does not modify the PRD, FRD, or SRS, invents no requirement IDs, retention periods, SLAs, reporting cadences, or endpoint contracts, and where the source documents leave a matter open, it records the gap rather than inventing a rule.
 
 **Status conventions** (consistent with FRD §2.4 and SRS §2.6):
 
 - **Confirmed** — established by the PRD/FRD/SRS baseline; the source is cited. Confirmed entries here restate the baseline; they do not extend it.
 - **Proposed** — offered by this record (and reflected in `SAD.md`/`DDD.md`) because some design must exist; requires explicit approval before being treated as decided.
+- **Approved** — originally **Proposed** by this record and explicitly approved at human review with any boundaries recorded in the entry; approved entries do not become part of the requirements baseline and do not resolve any open decision.
 - **Open** — genuinely unresolved; either carried forward from FRD §9 open decisions (**OD-xx**) or identified here as an item no source document settles. No value is invented in the meantime.
 - **Assumption (AS-xx)** — FRD §9.3 assumptions are reproduced unchanged where they bear on a decision; they are not approved.
 
@@ -31,7 +32,7 @@
 - [2. Scope and How to Read This Record](#2-scope-and-how-to-read-this-record)
 - [3. Decision Register](#3-decision-register)
 - [4. Confirmed Decisions (IF-DEC-01 … IF-DEC-11)](#4-confirmed-decisions-if-dec-01--if-dec-11)
-- [5. Proposed Decisions (IF-DEC-12, IF-DEC-13, IF-DEC-15 … IF-DEC-18)](#5-proposed-decisions-if-dec-12-if-dec-13-if-dec-15--if-dec-18)
+- [5. Approved Decisions (IF-DEC-12, IF-DEC-13, IF-DEC-15 … IF-DEC-18)](#5-approved-decisions-if-dec-12-if-dec-13-if-dec-15--if-dec-18)
 - [6. Open Items (IF-DEC-10, IF-DEC-14, and Provider Selections)](#6-open-items-if-dec-10-if-dec-14-and-provider-selections)
 - [7. Interaction with FRD Open Decisions (OD-01 … OD-16)](#7-interaction-with-frd-open-decisions-od-01--od-16)
 - [8. Assumptions Affecting Architecture (AS-01, AS-02, AS-03)](#8-assumptions-affecting-architecture-as-01-as-02-as-03)
@@ -73,15 +74,15 @@ Each entry below uses a fixed structure:
 | IF-DEC-09 | Frontend deployment: Vercel | **Confirmed** | PRD §11.2 |
 | IF-DEC-10 | Backend hosting environment | **Open** | PRD §11.2 ("to be selected and configured") |
 | IF-DEC-11 | Testing technologies: JUnit, Spring Boot Test, Playwright | **Confirmed** | PRD §11.2; NFR-MNT-004 |
-| IF-DEC-12 | REST API style over JSON for the frontend–backend boundary | **Proposed** | SRS-IF-01 (boundary confirmed; style not) |
-| IF-DEC-13 | Persisted derived compliance evaluations (`requirement_evaluations`) | **Proposed** | NFR-PERF-004, NFR-DAT-006, FR-COMP-007 |
+| IF-DEC-12 | REST API style over JSON for the frontend–backend boundary | **Approved** (Stage 1.6) | SRS-IF-01 (boundary confirmed; style not) |
+| IF-DEC-13 | Persisted derived compliance evaluations (`requirement_evaluations`) | **Approved** (Stage 1.6, bounded) | NFR-PERF-004, NFR-DAT-006, FR-COMP-007 |
 | IF-DEC-14 | API versioning strategy | **Open** | No source document establishes it |
-| IF-DEC-15 | Synchronous, in-transaction compliance recalculation | **Proposed** | NFR-REL-001, NFR-REL-005, NFR-DAT-006 |
-| IF-DEC-16 | Optimistic locking (version column) for workflow concurrency | **Proposed** | NFR-DAT-008; FR-REPORT-006 |
-| IF-DEC-17 | No message broker or background-job platform in the MVP | **Proposed** | PRD §11.1, §14.1; SRS §3.4 |
-| IF-DEC-18 | Health endpoint and basic structured logging | **Proposed** | No quantitative source requirement; NFR-REL-008 (no SLA invented) |
+| IF-DEC-15 | Synchronous, in-transaction compliance recalculation | **Approved** (Stage 1.6, bounded) | NFR-REL-001, NFR-REL-005, NFR-DAT-006 |
+| IF-DEC-16 | Optimistic locking (version column) for workflow concurrency | **Approved** (Stage 1.6) | NFR-DAT-008; FR-REPORT-006 |
+| IF-DEC-17 | No message broker or background-job platform in the MVP | **Approved** (Stage 1.6, bounded) | PRD §11.1, §14.1; SRS §3.4 |
+| IF-DEC-18 | Health endpoint and basic structured logging | **Approved** (Stage 1.6) | No quantitative source requirement; NFR-REL-008 (no SLA invented) |
 
-Counts: 10 Confirmed (IF-DEC-01 … IF-DEC-09, IF-DEC-11), 6 Proposed (IF-DEC-12, 13, 15, 16, 17, 18), 2 Open (IF-DEC-10, IF-DEC-14). IF-DEC-05/07/08 are Confirmed with an embedded Open sub-item (hosting, vendor, transport). Total: 18 decisions. No entry resolves an FRD open decision; those remain in §7.
+Counts: 10 Confirmed (IF-DEC-01 … IF-DEC-09, IF-DEC-11), 6 Approved (IF-DEC-12, 13, 15, 16, 17, 18 — formerly Proposed; approved at the Stage 1.6 planning review, 2026-10-17, with the boundaries recorded in §5), 2 Open (IF-DEC-10, IF-DEC-14). IF-DEC-05/07/08 are Confirmed with an embedded Open sub-item (hosting, vendor, transport). Total: 18 decisions. No entry resolves an FRD open decision; those remain in §7.
 
 ## 4. Confirmed Decisions (IF-DEC-01 … IF-DEC-11)
 
@@ -186,13 +187,13 @@ The entries below cover the established technology baseline of PRD §11.2 (IF-DE
 - **Alternatives:** Other JVM test frameworks or Selenium instead of Playwright — would contradict PRD §11.2. Property-based testing libraries — permissible as additions but not established; additions require review.
 - **Related requirements:** PRD §11.2, §13.1; NFR-MNT-004; NFR-MNT-006.
 
-## 5. Proposed Decisions (IF-DEC-12, IF-DEC-13, IF-DEC-15 … IF-DEC-18)
+## 5. Approved Decisions (IF-DEC-12, IF-DEC-13, IF-DEC-15 … IF-DEC-18)
 
-The entries below are **not** established by any source document. They are offered because the architecture needs a position, and they require explicit approval (§11) before being treated as decided. Each is cross-referenced from `SAD.md` and/or `DDD.md` with the same ID.
+The entries below are **not** established by any source document. They were originally offered as **Proposed** because the architecture needs a position; at the Stage 1.6 planning review (2026-10-17) each was **approved with the boundaries recorded in its entry**. Approval makes each an architectural direction for the current baseline — it does not promote it to the requirements baseline, does not settle the open sub-items listed with it, and resolves none of the FRD open decisions (§7). Each is cross-referenced from `SAD.md` and/or `DDD.md` with the same ID.
 
 ### IF-DEC-12 — REST API style over JSON
 
-- **Status:** **Proposed.**
+- **Status:** **Approved** (Stage 1.6 planning review, 2026-10-17; originally Proposed by this record). Boundary: endpoint paths, request/response schemas, and error-response structure remain open for the API Specification, and API versioning is tracked separately under IF-DEC-14 (Open) — no endpoint contract is invented here.
 - **Context:** SRS-IF-01 confirms only that the frontend and backend communicate through a defined API boundary; it explicitly states that "the protocol style, endpoint catalogue, and payload schemas are not established by the source documents and are deferred to the API Specification."
 - **Decision:** Use a RESTful style over HTTPS with JSON bodies for the resource-oriented domain (internships, cohorts, reports, documents, notifications), leaving endpoint paths, payload schemas, and error shapes to the API Specification. Error responses shall convey the failure categories of FRD §7.1 (SRS-IF-04).
 - **Consequences:** Aligns with the stateless Spring MVC stack and with SRS-IF-05 (state cannot be manipulated client-side because transitions are server-validated). Does **not** pre-decide versioning (IF-DEC-14, Open) or any concrete endpoint contract — none is invented here.
@@ -201,7 +202,7 @@ The entries below are **not** established by any source document. They are offer
 
 ### IF-DEC-13 — Persisted derived compliance evaluations
 
-- **Status:** **Proposed.**
+- **Status:** **Approved with boundaries** (Stage 1.6 planning review, 2026-10-17; originally Proposed by this record). Boundary: persisted per-requirement evaluations are approved as the common derived compliance source for dashboards, reports, exports, and completion checks, but OD-04 remains **Open** — the compliance status vocabulary, calculation rules, and detailed evaluation behavior are not finalized. Failed evaluations must never silently appear satisfied (NFR-REL-005), and the no-edit-by-any-role rule (PR-07) stands.
 - **Context:** A single compliance result per internship must be consistent across dashboards, reports, CSV exports, and completion eligibility (SRS-FR-004), served from "the single evaluated compliance source (or a consistent materialization of it)" (NFR-PERF-004), with failed evaluations marked stale or unevaluated and never as satisfied (NFR-REL-005).
 - **Decision:** Persist per-requirement evaluation rows (one per applicable requirement per internship — the `requirement_evaluations` table, `DDD.md` §8.1) as the single derived compliance source; dashboards, exports, and completion all read from it rather than recomputing independently.
 - **Consequences:** Guarantees cross-surface consistency (NFR-DAT-006) and bounds read cost (NFR-PERF-004); introduces a staleness risk that is managed by IF-DEC-15 (recalculation in the triggering transaction) plus a stale flag on failure (NFR-REL-005). Evaluation **statuses and calculation rules are Open** under OD-04 — this decision fixes *where* results live, not *how* they are computed. The row set and vocabulary are therefore partially open in `DDD.md`.
@@ -210,7 +211,7 @@ The entries below are **not** established by any source document. They are offer
 
 ### IF-DEC-15 — Synchronous, in-transaction compliance recalculation
 
-- **Status:** **Proposed.**
+- **Status:** **Approved with boundaries** (Stage 1.6 planning review, 2026-10-17; originally Proposed by this record). Boundary: the intended approach is synchronous recalculation within the triggering transaction, but the precise failure-handling policy must be specified before implementation — the choice between transaction rollback and marking an evaluation stale/unevaluated is not made here and follows the failure conditions of FRD §7.3 / SRS §11. Consistency and data-integrity requirements (NFR-DAT-006, NFR-REL-001/005) are preserved.
 - **Context:** Compliance-derived information must be consistent everywhere it is displayed (NFR-DAT-006), failed evaluations must never appear as satisfied (NFR-REL-005), and failed operations must leave data unchanged with no partial writes (NFR-REL-001).
 - **Decision:** When an event that affects compliance occurs (report state change, document review, requirement change), the affected compliance evaluations are recalculated **synchronously within the same database transaction** as the triggering change. If recalculation fails, the transaction rolls back or the affected result is marked stale/unevaluated — never silently satisfied.
 - **Consequences:** Strong consistency with no message ordering or replay concerns; adds latency to the triggering operation, which is acceptable at single-department scale (PRD §11.1) but must be re-examined if targets are later defined (NFR-PERF-002). Whether "roll back" or "mark stale" applies in each failure mode follows the error semantics of FRD §7.3 / SRS §11, not a choice made here.
@@ -219,7 +220,7 @@ The entries below are **not** established by any source document. They are offer
 
 ### IF-DEC-16 — Optimistic locking for workflow concurrency
 
-- **Status:** **Proposed.**
+- **Status:** **Approved** (Stage 1.6 planning review, 2026-10-17; originally Proposed by this record). Boundary: applies to concurrently modified workflow aggregates where appropriate, starting with weekly reports as described below; database-level unique and partial-unique constraints remain independent safeguards. No workflow functionality or database migrations are implemented under this approval.
 - **Context:** Concurrent conflicting workflow actions (two faculty approvals racing, duplicate submissions) must yield exactly one effective transition with only one action recorded (NFR-DAT-008; FRD §7.2 case 22; SRS-ERR-007), and one report per internship-period must be enforced atomically (NFR-DAT-002; FR-REPORT-006).
 - **Decision:** Add a version column to `weekly_reports` (and to other concurrently-written aggregates identified during design) and use JPA optimistic locking; a losing writer receives an invalid-transition/no-op outcome and writes nothing. Database-level unique and partial-unique constraints remain the final backstop for NFR-DAT-002 — locking is complementary, not substitutive.
 - **Consequences:** No blocking or deadlocks under the expected low concurrency; losers must surface a meaningful error per FRD §7.1 (invalid-transition category, SRS-IF-04). Retry-on-conflict behavior for idempotent endpoints (NFR-REL-003) must be designed carefully to avoid double-recalculation (IF-DEC-15).
@@ -228,7 +229,7 @@ The entries below are **not** established by any source document. They are offer
 
 ### IF-DEC-17 — No message broker or background-job platform in the MVP
 
-- **Status:** **Proposed.**
+- **Status:** **Approved with boundaries** (Stage 1.6 planning review, 2026-10-17; originally Proposed by this record). Boundary: the MVP introduces no message broker, external job queue, or separate worker fleet without a demonstrated requirement, and no queue infrastructure is to be added; OD-09 remains **Open**, so this approval does not finalize email delivery guarantees, retry policies, deadline-reminder behavior, or notification scheduling requirements.
 - **Context:** The system targets one department or cohort (PRD §11.1; SRS §3.4); the PRD non-goals exclude microservices (PRD §5.2), and no requirement demonstrates a need for brokered messaging. Notification delivery must be non-blocking (SRS-IF-14) but no delivery guarantee is established (OD-09, SRS-IF-17).
 - **Decision:** The MVP uses no message broker, no external job queue, and no separate worker fleet. In-app notifications are rows in PostgreSQL; email dispatch is an in-process, post-commit, best-effort step with failures recorded (NFR-REL-004). Any periodic work uses Spring's built-in scheduling in the same deployable until a demonstrated need says otherwise.
 - **Consequences:** Keeps the deployment footprint at two application deployables plus datastore, storage, and email service (`SAD.md` P9); in-process dispatch means email loss is possible if the process dies between commit and send — acceptable only while OD-09 leaves delivery guarantees open, and must be revisited if OD-09 introduces retries or scheduled reminders. No cross-instance coordination exists if the backend is ever scaled horizontally — a constraint to re-check when IF-DEC-10 selects hosting.
@@ -237,7 +238,7 @@ The entries below are **not** established by any source document. They are offer
 
 ### IF-DEC-18 — Health endpoint and basic structured logging
 
-- **Status:** **Proposed.** No source document mandates a specific observability tool; NFR-REL-008 forbids inventing uptime or recovery targets, and no log-retention duration is established (OD-11 applies to records; log policy belongs to the future Deployment and Operations Guide).
+- **Status:** **Approved** (Stage 1.6 planning review, 2026-10-17; originally Proposed by this record; the health endpoint was additionally live-verified during the Stage 1.6 review — `GET /api/health` returned the documented response and unauthenticated access to other paths was refused). Boundary: no uptime target, log-retention period, or mandatory monitoring vendor is invented. No source document mandates a specific observability tool; NFR-REL-008 forbids inventing uptime or recovery targets, and no log-retention duration is established (OD-11 applies to records; log policy belongs to the future Deployment and Operations Guide).
 - **Context:** Operators and reviewers need to know whether the backend is running and what happened during a failure, without committing to an SLA or a specific log volume/retention that no requirement defines.
 - **Decision:** Expose an unauthenticated liveness-style health endpoint (no sensitive detail) and write structured application logs for errors, authorization denials, and workflow transitions, excluding secrets and sensitive document content. No metrics platform, tracing system, or log aggregation vendor is selected; no uptime target is claimed.
 - **Consequences:** Provides minimal operability for deployment and test environments; the health endpoint must not leak configuration or data (consistent with NFR-SEC-003's generic-failure posture and NFR-SEC-008). Log content policy and retention remain with the Security Requirements / Deployment and Operations Guide — nothing here commits a retention period.
@@ -254,7 +255,7 @@ The entries below are **not** established by any source document. They are offer
 | Email transport/provider | IF-DEC-08 (Confirmed, transport open) | Service, transport, retry behavior, delivery guarantees | OD-09 → SRS / Deployment Guide |
 | Database hosting | IF-DEC-05 (Confirmed, hosting open) | Managed service vs. self-hosted; backup approach; **no invented retention (OD-11) or availability targets (NFR-REL-008)** | Deployment and Operations Guide |
 | Authentication mechanics | IF-DEC-04 (framework confirmed) | Credentials, password policy, session/token lifetime, lockout | OD-15 → Security Requirements |
-| Compliance status vocabulary and calculation rules | IF-DEC-13 (persistence proposed) | Statuses, weights, formulas | OD-04 → SRS + Database Design |
+| Compliance status vocabulary and calculation rules | IF-DEC-13 (persistence approved) | Statuses, weights, formulas | OD-04 → SRS + Database Design |
 | Performance/uptime targets | none — no decision exists | Response-time, throughput, concurrency, availability commitments | NFR-PERF-002, NFR-REL-008 (targets open) |
 
 **IF-DEC-14 — API versioning strategy (Open).** Context: SRS-IF-01 defers protocol details to the API Specification, and no source document establishes versioning. Decision: **not decided.** Options to evaluate when the API Specification is written: URL prefix versioning, media-type/header versioning, or no versioning given a single first-party frontend. Consequences: client error-handling and cache behavior vary by option; deferring is low-risk for a single-frontend MVP but must be settled before any second consumer exists. Related requirements: SRS-IF-01, SRS-IF-04.
@@ -270,7 +271,7 @@ Reproduced from FRD §9 (unchanged; this record resolves none of them). The fina
 | OD-01 | Role and permission boundaries | Bounds IF-DEC-04: Spring Security enforces only the matrix as written; admin authority (report approval, completion verification) stays absent by default |
 | OD-02 | Approved-report modification, reopening, rejection | May add transitions to FRD §5.2's model; IF-DEC-12/IF-DEC-16 implementations must accommodate whatever is decided |
 | OD-03 | Requirement ownership and change propagation | Affects IF-DEC-13/IF-DEC-15: requirement edits may trigger re-evaluation |
-| OD-04 | Compliance statuses and calculation rules | Open within IF-DEC-13: persistence is proposed, vocabulary/formula not |
+| OD-04 | Compliance statuses and calculation rules | Open within IF-DEC-13: persistence is approved, vocabulary/formula not |
 | OD-05 | Document review requirements and effects | May add compliance inputs to IF-DEC-13's evaluation rows; `DDD.md` flags interim constraints |
 | OD-06 | Audit event set and viewing permissions | Bounds logging/audit scope referenced by IF-DEC-18; no viewing map invented |
 | OD-07 | Exact MVP reports and CSV columns | Deferred to Reporting design; not addressed here |
@@ -286,7 +287,7 @@ Reproduced from FRD §9 (unchanged; this record resolves none of them). The fina
 
 ## 8. Assumptions Affecting Architecture (AS-01, AS-02, AS-03)
 
-Reproduced unchanged from FRD §9.3. These are **not approved**; they are listed because the schema and service design in `DDD.md` depend on them (partial unique indexes and cardinality rules). If a reviewer rejects one, the corresponding `DDD.md` constraints must be revisited.
+Reproduced unchanged from FRD §9.3. These remain **assumptions — not confirmed product requirements**. At the Stage 1.6 planning review (2026-10-17) AS-01, AS-02, and AS-03 were **accepted as working assumptions for the current architectural baseline**; they are listed here because the schema and service design in `DDD.md` depend on them (partial unique indexes and cardinality rules). If a reviewer later rejects one, the corresponding `DDD.md` constraints must be revisited.
 
 | Assumption | Statement (FRD §9.3) | Requirement | Where it bites |
 |---|---|---|---|
@@ -332,13 +333,13 @@ Consolidated view across §4–§5 (each entry's reasoning appears with its deci
 | IF-DEC-09 | PRD §11.2, §11.3; NFR-SEC-008; SRS-IF-16 | Restates confirmed baseline |
 | IF-DEC-10 | PRD §11.2, §11.3; NFR-REL-008; NFR-SEC-008; SRS-IF-16 | **No** — explicitly open |
 | IF-DEC-11 | PRD §11.2, §13.1; NFR-MNT-004; NFR-MNT-006 | Technologies confirmed; targets open |
-| IF-DEC-12 | SRS-IF-01; SRS-IF-03; SRS-IF-04; SRS-IF-05; SRS-FR-007 | **No** — proposed; defers to API Specification |
-| IF-DEC-13 | FR-COMP-007; FR-DASH-006; SRS-FR-004; NFR-PERF-004; NFR-DAT-006; NFR-REL-005 | **No** — proposed; OD-04 remains |
+| IF-DEC-12 | SRS-IF-01; SRS-IF-03; SRS-IF-04; SRS-IF-05; SRS-FR-007 | **No** — approved at Stage 1.6; still defers to API Specification |
+| IF-DEC-13 | FR-COMP-007; FR-DASH-006; SRS-FR-004; NFR-PERF-004; NFR-DAT-006; NFR-REL-005 | **No** — approved at Stage 1.6 (bounded); OD-04 remains |
 | IF-DEC-14 | SRS-IF-01; SRS-IF-04 | **No** — explicitly open |
-| IF-DEC-15 | NFR-REL-001; NFR-REL-005; NFR-DAT-006; SRS-FR-004 | **No** — proposed |
-| IF-DEC-16 | NFR-DAT-008; NFR-DAT-002; FR-REPORT-006; SRS-ERR-007; NFR-REL-003 | **No** — proposed |
-| IF-DEC-17 | PRD §11.1, §5.2, §14.1; SRS §3.4; SRS-IF-14; NFR-REL-004 | **No** — proposed; OD-09 remains |
-| IF-DEC-18 | NFR-REL-008; NFR-SEC-003; NFR-SEC-008; PRD §12 | **No** — proposed; no SLA/retention invented |
+| IF-DEC-15 | NFR-REL-001; NFR-REL-005; NFR-DAT-006; SRS-FR-004 | **No** — approved at Stage 1.6 (bounded) |
+| IF-DEC-16 | NFR-DAT-008; NFR-DAT-002; FR-REPORT-006; SRS-ERR-007; NFR-REL-003 | **No** — approved at Stage 1.6 |
+| IF-DEC-17 | PRD §11.1, §5.2, §14.1; SRS §3.4; SRS-IF-14; NFR-REL-004 | **No** — approved at Stage 1.6 (bounded); OD-09 remains |
+| IF-DEC-18 | NFR-REL-008; NFR-SEC-003; NFR-SEC-008; PRD §12 | **No** — approved at Stage 1.6; no SLA/retention invented |
 
 ### 10.2 Requirement → decisions that consume it
 
@@ -367,9 +368,9 @@ Consolidated view across §4–§5 (each entry's reasoning appears with its deci
 
 ## 11. Review Checklist and Approval Status
 
-**Overall status: Draft — Pending Review. This record approves nothing.**
+**Overall status: Draft — Pending Review. This record approves nothing by itself.** Approvals made at human review (currently the Stage 1.6 disposition in §11.3) are recorded from the reviewer, not granted by this document; document-level approval and the two Open entries remain outstanding.
 
-### 11.1 Automated consistency checks (executed 2026-10-15)
+### 11.1 Automated consistency checks (executed 2026-10-15; re-executed 2026-10-17 at the Stage 1.6 review)
 
 | # | Check | Result |
 |---|---|---|
@@ -379,7 +380,7 @@ Consolidated view across §4–§5 (each entry's reasoning appears with its deci
 | 4 | AS-01/AS-02/AS-03 statements match FRD §9.3 verbatim in meaning and citation | **Pass** |
 | 5 | No invented retention period, SLA/uptime target, reporting cadence, compliance value, or endpoint contract appears | **Pass** — open items named in §6 instead |
 | 6 | Role boundaries preserved: no admin report-approval or completion authority; faculty-only weekly-report approval; five states with FRD §5.2 transitions only | **Pass** (§2 restates; no decision alters them) |
-| 7 | Register counts match §3 header counts (10 Confirmed, 6 Proposed, 2 Open) | **Pass** |
+| 7 | Register counts match §3 header counts (10 Confirmed, 6 Approved, 2 Open) | **Pass** |
 
 Programmatic check #2 was run over all `FR-`, `SRS-`, `NFR-`, `PR-`, `OD-`, `AS-`, and `IF-DEC-` identifiers in this file against the identifier sets in `docs/requirements/FRD.md`, `docs/requirements/SRS.md`, and `docs/requirements/PRD.md`; unresolved identifiers: **none**. (If this file is edited later, re-run the same check.)
 
@@ -387,11 +388,11 @@ Programmatic check #2 was run over all `FR-`, `SRS-`, `NFR-`, `PR-`, `OD-`, `AS-
 
 | # | Action for reviewer | Blocking? |
 |---|---|---|
-| 1 | Approve or amend the six Proposed entries (IF-DEC-12, IF-DEC-13, IF-DEC-15, IF-DEC-16, IF-DEC-17, IF-DEC-18) | **Yes** — none may be treated as decided until signed off |
+| 1 | ~~Approve or amend the six Proposed entries (IF-DEC-12, IF-DEC-13, IF-DEC-15, IF-DEC-16, IF-DEC-17, IF-DEC-18)~~ **Completed at the Stage 1.6 planning review (2026-10-17):** all six approved with the boundaries recorded in §5 | No — resolved |
 | 2 | Direct a shortlist or criteria for backend hosting (IF-DEC-10) | Yes, before deployment planning |
 | 3 | Confirm the embedded open sub-items (storage vendor, email transport, database hosting) are correctly deferred | Yes |
 | 4 | Confirm §7's interaction notes do not overstate or resolve any OD-01 … OD-16 | **Yes** |
-| 5 | Confirm the AS-01/AS-02/AS-03 dependency note in §8 | Yes |
+| 5 | Confirm the AS-01/AS-02/AS-03 dependency note in §8 | Yes — accepted at the Stage 1.6 review (2026-10-17); further confirmation optional |
 | 6 | Decide whether a versioning recommendation should be prepared for the API Specification (IF-DEC-14) | No — may stay open |
 
 ### 11.3 Approval
@@ -400,5 +401,7 @@ Programmatic check #2 was run over all `FR-`, `SRS-`, `NFR-`, `PR-`, `OD-`, `AS-
 |---|---|---|---|
 | Project reviewer / stakeholder | _pending_ | _pending_ | _pending_ |
 | Development lead | _pending_ | _pending_ | _pending_ |
+
+**Stage 1.6 planning review disposition (2026-10-17):** the six formerly Proposed decisions **IF-DEC-12, IF-DEC-13, IF-DEC-15, IF-DEC-16, IF-DEC-17, and IF-DEC-18 were approved** with the boundaries recorded in §5 (review action 1 resolved), and the AS-01/AS-02/AS-03 dependency note in §8 was accepted (review action 5). Review actions 2, 3, 4, and 6 remain pending, as do the two Open entries (IF-DEC-10, IF-DEC-14) and all FRD §9 open decisions. This partial disposition does **not** constitute document-level approval; the rows above stay _pending_.
 
 *End of document — status: Draft, pending human review.*

@@ -241,8 +241,16 @@ $env:INTERNFLOW_DB_PASSWORD = "<your-local-password>"
 ```
 
 **Not tested:** Stage 1.5 did not connect to a live PostgreSQL instance. No
-PostgreSQL client or server was available in the development environment, and no
-database host has been chosen. A live connection must be verified in a later stage.
+PostgreSQL client or server was available in the development environment at that
+time, and no database host has been chosen. A live connection must be verified in
+a later stage.
+
+**Stage 1.6 review note (2026-10-17):** during the Stage 1.6 planning review, a
+local PostgreSQL server **was** detected listening on `localhost:5432` (the
+backend's connection attempt received a SCRAM authentication request and was
+refused because no password was configured). Successful database authentication
+and application connectivity have **not** been verified: they still require valid
+credentials and a created database. No credentials are recorded here.
 
 ---
 
