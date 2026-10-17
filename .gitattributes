@@ -1,0 +1,22 @@
+# Line-ending policy for InternFlow.
+#
+# "* text=auto" tells Git to detect text files, store them normalized (LF) in
+# the repository, and render them with native endings in working copies
+# (CRLF on Windows for users with core.autocrlf=true). This makes the policy
+# explicit and consistent for every collaborator, independent of local Git
+# configuration, and prevents accidental committing of mixed line endings.
+#
+# Binary formats are declared so Git never touches their contents.
+
+* text=auto
+
+*.png  binary
+*.jpg  binary
+*.jpeg binary
+*.gif  binary
+*.ico  binary
+*.pdf  binary
+*.zip  binary
+*.jar  binary
+*.woff  binary
+*.woff2 binary
