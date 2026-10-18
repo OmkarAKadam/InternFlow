@@ -108,11 +108,21 @@ npm run build
 npm run start
 ```
 
-### Linting
+### Linting and type checking
 
 ```powershell
 npm run lint
+npm run typecheck
 ```
+
+### Current routes
+
+- `/` — neutral landing page with a link to sign in.
+- `/login` — sign-in interface. It validates input and presents loading and
+  error states, but is **not connected to a backend**: no approved
+  authentication API contract exists yet, so submission shows an
+  integration-pending notice and sends no request. See
+  `docs/reviews/STAGE-2.2-REVIEW.md` §8 for what is required to connect it.
 
 ### Environment variables
 
