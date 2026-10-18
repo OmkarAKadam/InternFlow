@@ -106,12 +106,12 @@ Purpose: store accounts, their single MVP role, and account status; the identity
 | Column | Type | Null | Constraints | Conf. | Notes / source |
 |---|---|---|---|---|---|
 | `id` | bigint | No | PK | Proposed | Surrogate key. |
-| `identity` | text | No | UNIQUE | Conf. | Unique email/username (FR-USER-001). Exact identity model (email vs username) is part of **OD-15**. |
+| `identity` | text | No | UNIQUE | Conf. | Unique email/username (FR-USER-001). Exact identity model was part of **OD-15**; **email address as the login identity was approved 2026-10-18 (IF-DEC-19)**. |
 | `display_name` | text | No | — | Conf. | FR-USER-001. |
 | `role` | text | No | CHECK `role IN ('STUDENT','FACULTY_COORDINATOR','COLLEGE_ADMINISTRATOR')` | Conf. (values) / Proposed (type) | Three MVP roles only (FR-USER-002); single role per user (**AS-04**) — a combined-role future would require a schema change (flagged, not designed). |
 | `account_status` | text | No | DEFAULT `'ACTIVE'`; CHECK `IN ('ACTIVE','DEACTIVATED')` | Conf. (concept) | Deactivation preserves all records/attribution; no deletion (FR-USER-005, PR-08). |
-| `activation_state` | text | No | DEFAULT `'PENDING'`; CHECK `IN ('PENDING','ACTIVATED')` | Proposed / **OD-15** | Creation is distinct from activation; unactivated accounts cannot sign in (FR-USER-001, FR-AUTH-001 AC4). Mechanics open (**OD-15**). |
-| `credential_hash` | text | Yes | — | Proposed / **OD-15** | Nullable until an activation mechanism exists. Sensitive: never logged/audited (§12). No password policy value is invented. |
+| `activation_state` | text | No | DEFAULT `'PENDING'`; CHECK `IN ('PENDING','ACTIVATED')` | Approved (IF-DEC-19, 2026-10-18) | Creation is distinct from activation; unactivated accounts cannot sign in (FR-USER-001, FR-AUTH-001 AC4). Mechanics approved: administrator-set temporary password with mandatory change at first login (IF-DEC-19, closing OD-15). |
+| `credential_hash` | text | Yes | — | Approved (IF-DEC-19, 2026-10-18) | BCrypt hash; nullable until the temporary credential is set/activated. Policy: minimum 12 characters, no mandatory character classes (IF-DEC-19). Sensitive: never logged/audited (§12). |
 | `contact_email` | text | Yes | — | Proposed (PR-06) | Notification target (FR-NOTIF-005) — may equal `identity`; separation is a proposed self-service field (PR-06). |
 | `contact_phone` | text | Yes | — | Proposed (PR-06) | Optional profile field. |
 | `created_at` | timestamptz | No | — | Proposed | |
@@ -119,7 +119,7 @@ Purpose: store accounts, their single MVP role, and account status; the identity
 
 - **Keys/constraints:** PK `id`; UNIQUE `identity`; role and status CHECKs.
 - **Indexes:** UNIQUE(identity) serves sign-in lookup; `role` index only if role-filtered listings show measurable need (not added speculatively).
-- **Sensitive data:** `credential_hash` (if used) is credential material — excluded from all DTOs, logs, and audit payloads (§12). Open decisions affecting this table: **OD-01** (self-role-change/self-deactivation), **OD-15** (activation/credentials).
+- **Sensitive data:** `credential_hash` (if used) is credential material — excluded from all DTOs, logs, and audit payloads (§12). Open decisions affecting this table: **OD-01** (self-role-change/self-deactivation). (OD-15 was closed 2026-10-18 by IF-DEC-19.)
 - **Deletion:** no MVP operation deletes users (FR-USER-005; PR-08 covers records; user deletion is an open question — FRD §4.2.2 marks it Open under OD-01).
 
 ### 4.2 `cohorts`
@@ -559,7 +559,7 @@ Not every business rule is a database constraint — the following **must** live
 - **Referential integrity:** FKs with RESTRICT everywhere; the student → internship → cohort → requirement chain cannot be broken (FR-INT-008, SRS-DR-012); referenced cohorts/internships cannot be deleted (PR-08).
 - **Validation:** type/format/range validation at the service boundary before persistence; CHECK constraints as structural backstops (§10.1); invalid requests persist nothing (FRD §7.3, NFR-REL-001).
 - **Sensitive data minimization:** no document content, no report content, and no credential material in `audit_events`, `notifications`, or log output (FR-AUDIT-002, FR-NOTIF-003, SAD §14). `requirement_results_snapshot` stores statuses and references only.
-- **Password and authentication data:** `credential_hash` (if used) is stored only on `users`, excluded from all read models, and its entire mechanics — hashing, policy, lifetime, lockout — is **OD-15**; no password value, policy, or token is invented in this design (NFR-SEC-009).
+- **Password and authentication data:** `credential_hash` (if used) is stored only on `users`, excluded from all read models, and its mechanics — hashing (BCrypt), policy (12-character minimum, no character-class requirements), lifetimes (30-minute idle, 8-hour absolute), and failed-login rate limiting without lockout — were **approved 2026-10-18 as IF-DEC-19**, closing OD-15 (`DECISIONS.md` §5); no password value or token appears in this design (NFR-SEC-009).
 - **Role-sensitive data access:** the schema supports scope queries (§5.1 chains); enforcement is server-side in the service layer (SRS-AUTH-006). No table stores "who may see whom" except `cohort_coordinator_assignments`, which is itself administrator-managed.
 - **Private document access:** content is outside the database entirely; `storage_key` is opaque and never publicly addressable (FR-DOC-007, NFR-SEC-004). Metadata visibility equals content visibility (FR-DOC-007).
 - **Audit data protection:** application-level immutability (FR-AUDIT-005); DB-level write-protection recommended; viewer mapping **OD-06**; no retention duration asserted (**OD-11**).
@@ -605,7 +605,7 @@ Labels on relationships mark the assumptions and open decisions: **AS-01** (one 
 
 | Table | Key columns | Sensitive? | Primary sources |
 |---|---|---|---|
-| `users` | `identity` (U), `role`, `account_status`, `activation_state`, `credential_hash` | Yes (credentials, identity) | FR-USER-001…008; OD-15 |
+| `users` | `identity` (U), `role`, `account_status`, `activation_state`, `credential_hash` | Yes (credentials, identity) | FR-USER-001…008; IF-DEC-19 (OD-15 closed 2026-10-18) |
 | `cohorts` | `cohort_code` (U), `deadline_config` | Low | FR-COHORT-001/005 |
 | `cohort_memberships` | `student_user_id`, `cohort_id`, `left_at` | Low | FR-COHORT-002; AS-02 |
 | `cohort_coordinator_assignments` | `cohort_id`, `faculty_user_id`, `is_primary` | Low | FR-COHORT-003; AS-03 |

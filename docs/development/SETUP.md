@@ -202,9 +202,7 @@ Spring Security is on the classpath because it is part of the confirmed stack
 - disables CSRF and creates no sessions, because no session/token mechanism
   exists yet.
 
-All authentication mechanics are an **open decision (OD-15)** and must not be
-treated as settled. This configuration is a development placeholder, not a
-production security posture.
+All authentication mechanics were an **open decision (OD-15)**; the mechanics were **approved on 2026-10-18** (IF-DEC-19 in `docs/architecture/DECISIONS.md`: server-managed sessions, HttpOnly cookie, CSRF, email identity, BCrypt, and the approved policy values) but **are not implemented yet**. This configuration remains a development placeholder, not a production security posture, until a later Stage 2 substage implements the approved design.
 
 ---
 

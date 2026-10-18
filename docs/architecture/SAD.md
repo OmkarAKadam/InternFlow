@@ -105,7 +105,7 @@ The diagram shows responsibilities, not deployment topology or vendor selection 
 ### 3.3 Deployment and integration boundaries
 
 - **External services:** PostgreSQL, private object storage, email delivery service, frontend hosting (Vercel), backend hosting (to be selected). See SAD §15 and `DECISIONS.md`.
-- **No MVP integration boundary** exists to college systems (LMS/SIS), job portals, or other external identity providers unless OD-15 later selects an external identity mechanism.
+- **No MVP integration boundary** exists to college systems (LMS/SIS), job portals, or other external identity providers — OD-15 closed on 2026-10-18 **without** selecting an external identity mechanism (IF-DEC-19, server-managed sessions).
 - **In scope (MVP):** all 13 essential modules of PRD §7.1, the report lifecycle of FRD §5, and the first major milestone of PRD §9.
 - **Out of scope (post-MVP, not designed here):** Company Mentor evaluations, attendance tracking, advanced analytics and PDF reports, additional notification channels, multi-department/multi-college support, external college-system integrations (PRD §7.2, §16; SRS §4.3; SRS-FR-002). These are explicitly not promoted into any MVP design element below.
 
@@ -140,10 +140,10 @@ The 13 essential MVP modules are all represented below, whether scheduled for ea
 ### 5.1 Module 1 — Authentication and Authorization
 
 - **Primary responsibility:** Verify identity at sign-in, maintain the authenticated state until sign-out/expiry, and enforce role-based and record-scope authorization on every protected operation server-side.
-- **Data it owns or manages:** Credential and account-status data on the user record (mechanics open — OD-15); authenticated principal derived per request. No separate identity store in the MVP design.
+- **Data it owns or manages:** Credential and account-status data on the user record (mechanics approved 2026-10-18 as IF-DEC-19, closing OD-15; not yet implemented); authenticated principal derived per request. No separate identity store in the MVP design.
 - **Important interactions:** Consumes user/role/status data (Module 2); protects every other module's operations; produces generic authentication-failure outcomes (FR-AUTH-001/005/006) and uniform authorization failures (FR-AUTH-007).
 - **Authorization / business-rule boundaries:** Deny by default (NFR-SEC-002); role checks plus scope checks (own record / assigned cohort / deployment) (FR-AUTH-003, FR-USER-007); enforcement server-side regardless of UI (FR-AUTH-004); deactivated accounts cannot authenticate and lose operation rights on the next protected request (FR-AUTH-005).
-- **Related source requirements:** PRD §7.1.1, §10, §15.3; FR-AUTH-001 … FR-AUTH-007; SRS §6.3 (SRS-FR-001), §7.1, §10. Open: OD-15, OD-01.
+- **Related source requirements:** PRD §7.1.1, §10, §15.3; FR-AUTH-001 … FR-AUTH-007; SRS §6.3 (SRS-FR-001), §7.1, §10. Open: OD-01 (OD-15 closed 2026-10-18 — IF-DEC-19).
 
 ### 5.2 Module 2 — User Management
 
@@ -151,7 +151,7 @@ The 13 essential MVP modules are all represented below, whether scheduled for ea
 - **Data it owns or manages:** `users` (identity, display name, role, account status, activation status); role-change and status-change history via audit events.
 - **Important interactions:** Supplies role/scope inputs to Module 1; cohort membership and coordinator assignment (Module 4) provide record scope for faculty (FR-USER-007); audit events recorded for `user.created`, `user.role_changed`, `user.deactivated`.
 - **Authorization / business-rule boundaries:** Administrator-only creation/role assignment (FR-USER-001/002); self-role-change and self-deactivation unsettled (OD-01); no account deletion in the MVP — deactivation preserves all records and attribution (FR-USER-005, PR-08, SRS-FR-009); duplicate identity rejected (FR-USER-006); no self-registration (AS-05).
-- **Related source requirements:** PRD §6.3, §7.1.2; FR-USER-001 … FR-USER-008; SRS §6.2, §10. Open: OD-01, OD-15; Proposed: PR-04, PR-06.
+- **Related source requirements:** PRD §6.3, §7.1.2; FR-USER-001 … FR-USER-008; SRS §6.2, §10. Open: OD-01 (OD-15 closed 2026-10-18 — IF-DEC-19); Proposed: PR-04, PR-06.
 
 ### 5.3 Module 3 — Internship Management
 
@@ -276,7 +276,7 @@ A three-layer core (controller → service → repository) with cross-cutting co
 | Application/service layer | The single home for use-case orchestration: authorization call, validation, state transition, side-effect coordination (history, audit, compliance, notification) within one transaction. | This is where FRD §5 transitions and FRD §4 permission cells are implemented; matches SRS-AUTH-001 (authorization before business logic). |
 | Domain rules and workflow transitions | Report state machine (five states, T1–T10), editability rules, completion eligibility, compliance evaluation rules, requirement classification. | Kept in plain classes/methods so JUnit unit tests can target them directly (SAD §16). State changes are accepted only through defined transitions (SRS-FR-003). |
 | Repositories and persistence | Spring Data JPA repositories; transaction boundaries via Spring's transaction management; constraint enforcement delegated to PostgreSQL where feasible (unique report per period — SRS-IF-08). | No business logic in repositories; no cascade deletions (PR-08, SRS-DR-012). |
-| Authentication and authorization | Spring Security authenticates requests; an authorization service evaluates role + record scope (own / assigned cohort / deployment) for each protected operation. | Session/token mechanics are **OD-15** and not fixed here (SAD §8). |
+| Authentication and authorization | Spring Security authenticates requests; an authorization service evaluates role + record scope (own / assigned cohort / deployment) for each protected operation. | Session/token mechanics were **OD-15** and are not fixed in this document (SAD §8); they were approved 2026-10-18 as IF-DEC-19 (server-managed sessions) in `DECISIONS.md`. |
 | Validation and exception handling | Bean validation for input shape; service-layer business validation; a single exception-handling boundary mapping internal outcomes to the five FRD §7.1 failure categories (business validation, authorization, invalid transition, technical, configuration-missing). | Categories are functional, not wire formats; concrete codes/shapes belong to the API Specification (SRS-ERR-002, SRS-IF-04). Error text must not assert open policies (SRS-ERR-014). |
 | Notification delivery | Service records notification rows in the business transaction; email dispatch occurs without blocking the business outcome (post-commit, best-effort), with failures recorded. | Non-blocking is confirmed (FR-NOTIF-006); the dispatch mechanism is **Approved** (IF-DEC-17) and retry/scheduling policy is **OD-09** (SAD §13). |
 | Audit event recording | Written in the same transaction as the triggering action for the required event set; failure fails the action. | Confirmed: FR-AUDIT-001, FR-REVIEW-002, SRS-IF-09, NFR-REL-002. |
@@ -290,7 +290,7 @@ A three-layer core (controller → service → repository) with cross-cutting co
 
 - **Application structure (Proposed):** a Next.js (App Router) TypeScript application with route groups per role — student, faculty coordinator, college administrator — plus a shared unauthenticated area (sign-in). Shared UI components (tables, status badges, forms, empty/error panels) live in a common component library used by all role areas.
 - **Role-specific interfaces:** each role area renders only the workflows its role is permitted to use (SRS-UI-02, SRS-UI-03). The server remains the enforcement authority: directly requesting a restricted route must still fail at the backend (FR-AUTH-004, SRS-UI-06).
-- **Authentication state and protected routes:** the frontend maintains session/auth state for navigation and conditional rendering; a client-side route guard redirects unauthenticated users for usability. This is explicitly **not** the enforcement mechanism (SRS-AUTH-005). Session/token mechanics remain **OD-15**.
+- **Authentication state and protected routes:** the frontend maintains session/auth state for navigation and conditional rendering; a client-side route guard redirects unauthenticated users for usability. This is explicitly **not** the enforcement mechanism (SRS-AUTH-005). Session/token mechanics were **OD-15**; they were approved 2026-10-18 as IF-DEC-19 (server-managed sessions with an HttpOnly cookie) — see `DECISIONS.md` §5.
 - **API communication:** a single typed API client layer (fetch wrapper) owns base URL configuration, credentials, error handling, and mapping of backend failure categories to user-visible messages. Components never call `fetch` directly. This layer is where a future API version prefix would be applied (SAD §10).
 - **Form validation:** client-side validation for immediate feedback (required fields, date order, file type/size hints) — purely advisory; identical rules are enforced server-side, and server responses are authoritative (NFR-SEC-005, SRS-IF-03).
 - **Loading, empty, success, and error states:** every data view defines all four states explicitly. Configuration gaps (no requirement set, no deadline configured) render as explicit "not configured" states, never as default-compliant or invented values (FR-DASH-002, FR-COMP-001, SRS-ERR-009).
@@ -328,9 +328,9 @@ A role alone never grants record-level authority (FR-USER-007, SRS-AUTH-002): a 
 - **Sensitive operations are authorized by the backend** regardless of UI visibility (FR-AUTH-004, NFR-SEC-001, SRS-UI-06).
 - Administrator boundaries still open: access to sensitive student record content, self-role-change, self-deactivation — **OD-01**; audit viewing — **OD-06**.
 
-### 8.4 Session and token strategy — not decided here
+### 8.4 Session and token strategy — decided 2026-10-18 (IF-DEC-19); options below retained as the analysis record
 
-The source documents establish Spring Security but **not** the credential/session mechanics (FR-AUTH-002 AC2; OD-15). Available options to be evaluated at Security Requirements (recorded, not chosen):
+The source documents establish Spring Security but **not** the credential/session mechanics (FR-AUTH-002 AC2; OD-15). **On 2026-10-18 the product owner approved Option A (server-managed sessions) with additional mechanics values; the decision is recorded as IF-DEC-19 in `DECISIONS.md` §5 and closes OD-15.** The options table below is retained as the analysis that supported the decision; the approved values (email identity, admin-created accounts with temporary-password first-login activation, BCrypt, 12-character minimum password length, 30-minute idle / 8-hour absolute lifetimes, rate limiting without permanent lockout) live in `DECISIONS.md` IF-DEC-19, not here. No implementation exists yet.
 
 | Option | Summary | Considerations |
 |---|---|---|
@@ -338,7 +338,7 @@ The source documents establish Spring Security but **not** the credential/sessio
 | B. Stateless token (e.g., JWT) | Signed token issued at sign-in, validated per request. | No server session state; requires token lifetime/renewal policy (part of OD-15) and careful XSS/CSRF handling. |
 | C. External identity provider | Delegated authentication. | Adds an external dependency; only relevant if OD-15 selects it; no MVP requirement does. |
 
-Account provisioning/activation mechanics (administrator-set credentials, invitation, first-login activation) are equally open under **OD-15**; the design only requires that creation is distinct from activation and that unactivated accounts cannot sign in (FR-USER-001, FR-AUTH-001 AC4). No password policy, lockout threshold, or token lifetime is invented in this document (**P10**).
+Account provisioning/activation mechanics (administrator-set credentials, invitation, first-login activation) were equally open under **OD-15**; the approved decision selects an administrator-set temporary credential with mandatory first-login change (IF-DEC-19). The design requirement stands that creation is distinct from activation and that unactivated accounts cannot sign in (FR-USER-001, FR-AUTH-001 AC4). The password policy and lifetimes are no longer invented in this document (**P10**) — they are approved values recorded in `DECISIONS.md` IF-DEC-19.
 
 ## 9. Key Workflows and Component Interactions
 
@@ -419,7 +419,7 @@ This section states high-level intentions only. The **API Specification is a sep
   - **Private object storage:** the backend is the only component with storage credentials; uploads/downloads are permission-checked backend paths; no public URLs (FR-DOC-007, SRS-IF-11). Whether downloads are proxied through the backend or served via short-lived signed URLs created *after* backend authorization is a design option to be fixed in the API Specification (SAD §12).
   - **Email delivery:** the backend composes notifications and hands them to the configured email service through an abstraction; failures are recorded and non-blocking (SRS-IF-13/14). Provider and retry policy remain **OD-09**.
 
-**Contracts that must be specified before implementation (for the future API Specification):** the endpoint catalogue for all 13 modules; authentication endpoints and session/token contract (**OD-15**); pagination/filter conventions; error envelope and status-code mapping; export download contract; document upload/download contract (including signed-URL vs. proxy decision); notification list endpoints; compliance/completion response shapes (pending **OD-04** vocabulary); report catalogue contract (pending **OD-07**).
+**Contracts that must be specified before implementation (for the future API Specification):** the endpoint catalogue for all 13 modules; authentication endpoints and session/token contract (**OD-15** closed by IF-DEC-19 — the mechanics are approved, but the concrete endpoint contract is still to be specified); pagination/filter conventions; error envelope and status-code mapping; export download contract; document upload/download contract (including signed-URL vs. proxy decision); notification list endpoints; compliance/completion response shapes (pending **OD-04** vocabulary); report catalogue contract (pending **OD-07**).
 
 ## 11. Database and Transaction Boundaries
 
@@ -551,7 +551,7 @@ The FRD open-decision register (FRD §9) is carried forward unchanged. Architect
 | OD-12 | Internship field catalogue and lifecycle states | Internship schema | Database Design / API Specification |
 | OD-13 | Student–internship reassignment | Relationship model | Database Design |
 | OD-14 | Cohort membership moves | Membership history model | Database Design |
-| OD-15 | Authentication mechanics | Spring Security configuration, credential storage | Security Requirements + SRS |
+| OD-15 | Authentication mechanics | **Closed 2026-10-18** — approved as IF-DEC-19 (`DECISIONS.md` §5): server-managed sessions, HttpOnly cookie + CSRF, email identity, admin-created accounts, temporary-password first-login activation, BCrypt, 12-char minimum, 30-min idle / 8-h absolute, rate limiting without lockout. Implementation still to come | Security Requirements + SRS (records the approved package; does not reopen it) |
 | OD-16 | File type/size policy values | Upload validation configuration | Security Requirements / Deployment |
 
 Also open: backend hosting provider, database hosting provider, storage provider, email provider (PRD §11.2, §14.2); API versioning (deferred to API Specification); all non-functional targets (PRD §18.3).

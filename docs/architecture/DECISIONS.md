@@ -11,12 +11,12 @@
 | Document Identifier | IF-DOC-DEC-001 |
 | Version | 1.0 |
 | Status | Draft — Pending Review (not approved) |
-| Last Updated | 2026-10-17 |
+| Last Updated | 2026-10-18 |
 | Purpose | Record every technology and architecture decision relevant to the InternFlow MVP — what is confirmed by the requirements baseline, what is proposed by this document and awaits approval, and what remains open — with context, rationale, consequences, alternatives, and traceability to the source requirements. This document decides nothing by itself; approval belongs to human review. |
 | Related Source Documents | PRD v1.0 — `docs/requirements/PRD.md` (baseline commit `9f91303`); FRD v1.0 — `docs/requirements/FRD.md` (commit `c8b8754`); SRS v1.0 — `docs/requirements/SRS.md` (commit `7ffeecc`); README — `README.md`. Companion deliverables: `docs/architecture/SAD.md` (System Architecture Document), `docs/architecture/DDD.md` (Database Design Document). |
 | Intended Audience | Project reviewer/stakeholder approving the architecture baseline; the development team implementing the MVP; authors of the API Specification, Security Requirements, Test Plan, and Deployment and Operations Guide. |
 
-**Review note:** This document remains a draft pending human review and must not be treated as wholesale-approved. At the Stage 1.6 planning review (2026-10-17) the six formerly **Proposed** entries (IF-DEC-12, IF-DEC-13, IF-DEC-15, IF-DEC-16, IF-DEC-17, IF-DEC-18) were **approved with the boundaries recorded in §5**, and the AS-01/AS-02/AS-03 dependency note (§8) was accepted (assumptions remain assumptions — §8). Every entry marked **Open** and the remaining §11 review actions are unresolved until a reviewer signs them off. It does not modify the PRD, FRD, or SRS, invents no requirement IDs, retention periods, SLAs, reporting cadences, or endpoint contracts, and where the source documents leave a matter open, it records the gap rather than inventing a rule.
+**Review note:** This document remains a draft pending human review and must not be treated as wholesale-approved. At the Stage 1.6 planning review (2026-10-17) the six formerly **Proposed** entries (IF-DEC-12, IF-DEC-13, IF-DEC-15, IF-DEC-16, IF-DEC-17, IF-DEC-18) were **approved with the boundaries recorded in §5**, and the AS-01/AS-02/AS-03 dependency note (§8) was accepted (assumptions remain assumptions — §8). At the Stage 2.1 review (2026-10-18) the product owner **approved the authentication-mechanics package** requested in `docs/reviews/STAGE-2.1-REVIEW.md` §8; it is recorded here as **IF-DEC-19** and closes FRD open decision **OD-15** (§5, §6, §7). Every other entry marked **Open** and the remaining §11 review actions are unresolved until a reviewer signs them off. It does not modify the PRD, FRD, or SRS, invents no requirement IDs, retention periods, SLAs, reporting cadences, or endpoint contracts, and where the source documents leave a matter open, it records the gap rather than inventing a rule.
 
 **Status conventions** (consistent with FRD §2.4 and SRS §2.6):
 
@@ -81,8 +81,9 @@ Each entry below uses a fixed structure:
 | IF-DEC-16 | Optimistic locking (version column) for workflow concurrency | **Approved** (Stage 1.6) | NFR-DAT-008; FR-REPORT-006 |
 | IF-DEC-17 | No message broker or background-job platform in the MVP | **Approved** (Stage 1.6, bounded) | PRD §11.1, §14.1; SRS §3.4 |
 | IF-DEC-18 | Health endpoint and basic structured logging | **Approved** (Stage 1.6) | No quantitative source requirement; NFR-REL-008 (no SLA invented) |
+| IF-DEC-19 | Authentication mechanics: server-managed Spring Security sessions with HttpOnly cookie, CSRF protection, email identity, admin-created accounts with temporary-password first-login activation, BCrypt hashing, 12-character minimum password length, 30-minute idle / 8-hour absolute session lifetimes, failed-login rate limiting without permanent lockout | **Approved** (Stage 2.1, closes OD-15) | FR-AUTH-001 … FR-AUTH-006; FR-USER-001; NFR-SEC-003, NFR-SEC-009; OD-15 |
 
-Counts: 10 Confirmed (IF-DEC-01 … IF-DEC-09, IF-DEC-11), 6 Approved (IF-DEC-12, 13, 15, 16, 17, 18 — formerly Proposed; approved at the Stage 1.6 planning review, 2026-10-17, with the boundaries recorded in §5), 2 Open (IF-DEC-10, IF-DEC-14). IF-DEC-05/07/08 are Confirmed with an embedded Open sub-item (hosting, vendor, transport). Total: 18 decisions. No entry resolves an FRD open decision; those remain in §7.
+Counts: 10 Confirmed (IF-DEC-01 … IF-DEC-09, IF-DEC-11), 7 Approved (IF-DEC-12, 13, 15, 16, 17, 18 — approved at the Stage 1.6 planning review, 2026-10-17, with the boundaries recorded in §5; IF-DEC-19 — approved at the Stage 2.1 review, 2026-10-18, closing OD-15), 2 Open (IF-DEC-10, IF-DEC-14). IF-DEC-05/07/08 are Confirmed with an embedded Open sub-item (hosting, vendor, transport). Total: 19 decisions. The only FRD open decision closed to date is OD-15 (by product-owner approval on 2026-10-18, recorded as IF-DEC-19); all other FRD open decisions remain in §7.
 
 ## 4. Confirmed Decisions (IF-DEC-01 … IF-DEC-11)
 
@@ -117,10 +118,10 @@ The entries below cover the established technology baseline of PRD §11.2 (IF-DE
 
 ### IF-DEC-04 — Authentication and authorization framework: Spring Security
 
-- **Status:** Confirmed. The framework is confirmed; the authentication *mechanics* (credentials, password policy, token/session lifetime, lockout) are **Open** under OD-15 and are not decided here (FRD §9; NFR-SEC-009).
+- **Status:** Confirmed. The framework is confirmed; the authentication *mechanics* (credentials, password policy, token/session lifetime, lockout) were **Open** under OD-15 and were not decided here; they were **approved on 2026-10-18** and are recorded as **IF-DEC-19** (§5), closing OD-15 (FRD §9; NFR-SEC-009).
 - **Context:** PRD §11.2 fixes Spring Security. Every protected operation must be authorized server-side with role and record scope, deny-by-default (SRS-FR-001, SRS-FR-007; NFR-SEC-001, NFR-SEC-002).
-- **Decision:** Spring Security is the authentication and authorization framework, providing the server-side enforcement layer for the FRD §4 permission matrix. Specific mechanics — credential model, session vs. token, lifetimes, lockout — are deferred to the Security Requirements per OD-15 and must not be assumed by other deliverables.
-- **Consequences:** Deny-by-default annotations/filters are the single enforcement point; frontend routing guards are convenience only (NFR-SEC-001). Any early implementation must be revisited when OD-15 resolves; the MVP must not rely on a specific mechanism before then (NFR-SEC-009).
+- **Decision:** Spring Security is the authentication and authorization framework, providing the server-side enforcement layer for the FRD §4 permission matrix. Specific mechanics — credential model, session vs. token, lifetimes, lockout — were deferred to the Security Requirements per OD-15 and are now decided as IF-DEC-19 (§5).
+- **Consequences:** Deny-by-default annotations/filters are the single enforcement point; frontend routing guards are convenience only (NFR-SEC-001). Implementation must follow the IF-DEC-19 package exactly; any mechanic outside that package requires a new decision.
 - **Alternatives:** Hand-rolled authorization filters — rejected: higher defect risk against NFR-SEC-002 and unnecessary given the fixed Spring stack. Third-party identity providers — not established by any source document; no external integration is in MVP scope (SRS-FR-002).
 - **Related requirements:** PRD §11.2; FR-AUTH-003; FR-AUTH-004; NFR-SEC-001; NFR-SEC-002; NFR-SEC-009; OD-15.
 
@@ -187,9 +188,9 @@ The entries below cover the established technology baseline of PRD §11.2 (IF-DE
 - **Alternatives:** Other JVM test frameworks or Selenium instead of Playwright — would contradict PRD §11.2. Property-based testing libraries — permissible as additions but not established; additions require review.
 - **Related requirements:** PRD §11.2, §13.1; NFR-MNT-004; NFR-MNT-006.
 
-## 5. Approved Decisions (IF-DEC-12, IF-DEC-13, IF-DEC-15 … IF-DEC-18)
+## 5. Approved Decisions (IF-DEC-12, IF-DEC-13, IF-DEC-15 … IF-DEC-19)
 
-The entries below are **not** established by any source document. They were originally offered as **Proposed** because the architecture needs a position; at the Stage 1.6 planning review (2026-10-17) each was **approved with the boundaries recorded in its entry**. Approval makes each an architectural direction for the current baseline — it does not promote it to the requirements baseline, does not settle the open sub-items listed with it, and resolves none of the FRD open decisions (§7). Each is cross-referenced from `SAD.md` and/or `DDD.md` with the same ID.
+The entries below are **not** established by any source document (IF-DEC-19 resolves FRD open decision OD-15, whose question the baseline posed but did not answer). IF-DEC-12, IF-DEC-13, and IF-DEC-15 … IF-DEC-18 were originally offered as **Proposed** and at the Stage 1.6 planning review (2026-10-17) were **approved with the boundaries recorded in their entries**. IF-DEC-19 was requested in `docs/reviews/STAGE-2.1-REVIEW.md` §8 and **approved by the product owner at the Stage 2.1 review (2026-10-18)**, closing OD-15. Approval makes each an architectural direction for the current baseline — it does not promote it to the requirements baseline, does not settle the open sub-items listed with it, and (except for OD-15) resolves none of the FRD open decisions (§7). Each is cross-referenced from `SAD.md` and/or `DDD.md` with the same ID.
 
 ### IF-DEC-12 — REST API style over JSON
 
@@ -245,6 +246,26 @@ The entries below are **not** established by any source document. They were orig
 - **Alternatives:** Full observability stack (metrics, distributed tracing, aggregation) — rejected for MVP: disproportionate for two deployables and would imply operational commitments NFR-REL-008 says do not exist. No health endpoint at all — rejected: deployment verification (IF-DEC-10, `SAD.md` §15) would have no lightweight signal.
 - **Related requirements:** NFR-REL-008; NFR-SEC-003; NFR-SEC-008; PRD §12.
 
+### IF-DEC-19 — Authentication mechanics (approved package; closes OD-15)
+
+- **Status:** **Approved** (Stage 2.1 review, 2026-10-18; requested in `docs/reviews/STAGE-2.1-REVIEW.md` §4/§8 and explicitly approved by the product owner). This approval **closes FRD open decision OD-15** — the only FRD open decision closed to date. Boundary: no authentication code exists yet; implementation belongs to a later Stage 2 substage and must follow this package exactly. Numeric rate-limiting thresholds and the exact `SameSite` value were **not** specified by the approver and are not invented here (see Decision below).
+- **Context:** PRD §11.2 fixes Spring Security but not its mechanics; FRD §9 (OD-15) asked which credential mechanism is used, how accounts are provisioned and activated, what session/token lifetimes and renewal rules apply, what password policy applies, and whether lockout/rate limiting is required. FR-AUTH-002 AC2 required that no other requirement assume a session/token representation until this decision; NFR-SEC-009 required that the MVP not rely on any specific mechanism before approval. The requirements themselves are unaffected: FR-AUTH-001 (generic failure), FR-AUTH-005 (deactivation), FR-AUTH-006 (no invented lockout) all remain as written and are satisfied by the package below.
+- **Decision:** InternFlow's MVP authentication uses:
+  1. **Server-managed Spring Security sessions** (no stateless tokens, no external identity provider).
+  2. **Session cookie:** `HttpOnly`; `Secure` in deployed (TLS) environments; `SameSite` attribute set to a value appropriate to the final deployment topology (exact value chosen at implementation with IF-DEC-10's outcome in mind — not fixed here).
+  3. **CSRF protection enabled** on state-changing endpoints.
+  4. **Email address as the login identity.**
+  5. **Administrator-created accounts only; no public/self registration** (consistent with AS-05).
+  6. **Activation:** an administrator-set temporary password that the user **must change at first login**; accounts that have not completed this cannot operate beyond the mandatory change.
+  7. **Password hashing: BCrypt** (Spring Security's `PasswordEncoder`).
+  8. **Password policy: minimum length of 12 characters; no mandatory character-class combinations.**
+  9. **Session lifetimes: 30-minute idle timeout; 8-hour absolute lifetime.**
+  10. **Failed-login rate limiting without permanent account lockout** (specific numeric thresholds were not specified by the approver; any threshold is an implementation detail to be recorded in the Security Requirements when written, not an approved value here).
+  11. **Company Mentor remains excluded from the MVP** (reaffirming PRD §6.4 / SRS-FR-002; no mentor role, permissions, or UI).
+- **Consequences:** Session state exists server-side (in PostgreSQL or backend-host memory — a persistence implementation detail to be documented, consistent with IF-DEC-05/IF-DEC-06); deactivation (FR-AUTH-005 AC2) and role changes (FR-USER-002 AC3) take effect on the next protected request by construction; logout and expiry must invalidate server-side state, not just the cookie. The `users` table columns `activation_state` and `credential_hash` in `DDD.md` §4.1 become implementable (BCrypt hash, never logged or audited). The Security Requirements document, when written, records this approved package rather than reopening it; NFR-SEC-009 is satisfied for the approved items only. Cross-origin cookie configuration (`SameSite`/`Secure`) must be revisited when IF-DEC-10 selects the backend host. Rate-limiting thresholds, if chosen at implementation, are not approved requirements until confirmed.
+- **Alternatives:** Stateless tokens (JWT) — rejected: weaker fit for FR-AUTH-005 AC2 and FR-USER-002 AC3 (immediate revocation requires extra machinery), no third-party API consumer or horizontal-scaling requirement exists (SAD P7; SRS §3.4). External identity provider — rejected: no MVP requirement or integration exists (SAD §3.3; consistent with the IF-DEC-04 alternatives). Mandatory password character-class combinations — rejected by approver: length-only policy. Permanent account lockout — rejected by approver: rate limiting without lockout.
+- **Related requirements:** FR-AUTH-001; FR-AUTH-002; FR-AUTH-005; FR-AUTH-006; FR-USER-001; FR-USER-002; FR-USER-005; NFR-SEC-003; NFR-SEC-008; NFR-SEC-009; OD-15 (closed).
+
 ## 6. Open Items (IF-DEC-10, IF-DEC-14, and Provider Selections)
 
 | Open item | Owning decision / OD | What must be decided | Deferred to |
@@ -254,17 +275,19 @@ The entries below are **not** established by any source document. They were orig
 | Object storage vendor | IF-DEC-07 (Confirmed, vendor open) | Concrete provider preserving private-only access (SRS-IF-11) | Deployment and Operations Guide |
 | Email transport/provider | IF-DEC-08 (Confirmed, transport open) | Service, transport, retry behavior, delivery guarantees | OD-09 → SRS / Deployment Guide |
 | Database hosting | IF-DEC-05 (Confirmed, hosting open) | Managed service vs. self-hosted; backup approach; **no invented retention (OD-11) or availability targets (NFR-REL-008)** | Deployment and Operations Guide |
-| Authentication mechanics | IF-DEC-04 (framework confirmed) | Credentials, password policy, session/token lifetime, lockout | OD-15 → Security Requirements |
+| ~~Authentication mechanics~~ | ~~IF-DEC-04 (framework confirmed)~~ **Resolved 2026-10-18: IF-DEC-19 (Approved), closes OD-15** | Decided: sessions, cookie/CSRF posture, email identity, admin-created accounts with temporary-password first-login activation, BCrypt, 12-character minimum length, 30-min idle / 8-h absolute lifetimes, rate limiting without lockout | Implementation in a later Stage 2 substage; Security Requirements document records the approved package |
 | Compliance status vocabulary and calculation rules | IF-DEC-13 (persistence approved) | Statuses, weights, formulas | OD-04 → SRS + Database Design |
 | Performance/uptime targets | none — no decision exists | Response-time, throughput, concurrency, availability commitments | NFR-PERF-002, NFR-REL-008 (targets open) |
 
 **IF-DEC-14 — API versioning strategy (Open).** Context: SRS-IF-01 defers protocol details to the API Specification, and no source document establishes versioning. Decision: **not decided.** Options to evaluate when the API Specification is written: URL prefix versioning, media-type/header versioning, or no versioning given a single first-party frontend. Consequences: client error-handling and cache behavior vary by option; deferring is low-risk for a single-frontend MVP but must be settled before any second consumer exists. Related requirements: SRS-IF-01, SRS-IF-04.
 
-No entry in this section resolves an FRD open decision; the FRD open decisions remain exactly as recorded in FRD §9 and are summarized in §7 below without alteration.
+**OD-15 — resolved by IF-DEC-19 (2026-10-18).** The Stage 2.1 substage (branch `stage-2-ui-authentication`) prepared an options analysis for the authentication mechanics: server-managed cookie sessions vs. stateless tokens (JWT) vs. an external identity provider, with a recommendation (server-managed sessions), the trade-offs, and the exact question requiring product-owner approval, including the sub-questions the baseline leaves open (credential/identity model, password policy, activation mechanics, session lifetime, lockout). The analysis and approval request are documented in `docs/reviews/STAGE-2.1-REVIEW.md` §4 and §8. **On 2026-10-18 the product owner approved the proposed package**, with these recorded values: minimum password length 12 characters without mandatory character-class combinations; 30-minute idle session timeout; 8-hour absolute session lifetime; BCrypt hashing; failed-login rate limiting without permanent account lockout; temporary administrator-set password with mandatory change at first login; email as login identity; administrator-created accounts with no public registration; HttpOnly session cookies (Secure in production, appropriate SameSite policy); CSRF protection enabled; server-managed Spring Security sessions; Company Mentor excluded from the MVP. The approval is recorded as **IF-DEC-19** (§5). **OD-15 is Closed.** Rate-limiting numeric thresholds and the exact `SameSite` value were not specified by the approver and are not invented (IF-DEC-19 boundary).
+
+No entry in this section resolves an FRD open decision other than OD-15 (closed by product-owner approval, recorded as IF-DEC-19); the remaining FRD open decisions are exactly as recorded in FRD §9 and are summarized in §7 below. Note: FRD §9 and SRS §14.4 are Stage 1 baseline documents whose registers still list OD-15 as open as of their v1.0 drafts; that baseline-level amendment is a change-control follow-up and is tracked in `docs/reviews/STAGE-2.1-REVIEW.md` §11 — this record does not alter the baseline.
 
 ## 7. Interaction with FRD Open Decisions (OD-01 … OD-16)
 
-Reproduced from FRD §9 (unchanged; this record resolves none of them). The final column notes which decisions above are *constrained by* or *waiting on* the open decision.
+Reproduced from FRD §9. The final column notes which decisions above are *constrained by* or *waiting on* the open decision. One deviation from the original reproduction: **OD-15 was closed by product-owner approval on 2026-10-18** (recorded as IF-DEC-19); its row below reflects that closure. All other rows are unchanged and the remaining FRD open decisions are not resolved by this record.
 
 | OD | Topic | Effect on this record |
 |---|---|---|
@@ -282,7 +305,7 @@ Reproduced from FRD §9 (unchanged; this record resolves none of them). The fina
 | OD-12 | Internship field catalogue and lifecycle states | May alter `DDD.md` schema; interim constraints flagged there |
 | OD-13 | Student–internship reassignment rules | Database Design scope; IF-DEC-16 concurrency may be affected |
 | OD-14 | Student cohort membership moves | Database Design scope; IF-DEC-13 history handling may be affected |
-| OD-15 | Authentication mechanics | Open within IF-DEC-04: framework confirmed, mechanics undecided |
+| OD-15 | Authentication mechanics | **Closed 2026-10-18** — approved as IF-DEC-19 (§5): server-managed sessions, HttpOnly cookie + CSRF, email identity, admin-created accounts, temporary-password first-login activation, BCrypt, 12-char minimum length, 30-min idle / 8-h absolute lifetimes, rate limiting without lockout. The FRD §9 v1.0 register predates this closure (baseline-amendment follow-up tracked in `docs/reviews/STAGE-2.1-REVIEW.md` §11) |
 | OD-16 | Document file-type and size policy values | Upload validation values deferred to Security Requirements; not invented here |
 
 ## 8. Assumptions Affecting Architecture (AS-01, AS-02, AS-03)
@@ -315,6 +338,9 @@ Consolidated view across §4–§5 (each entry's reasoning appears with its deci
 | Pessimistic locking, serializable-everywhere | IF-DEC-16 | Contention/perf cost unjustified at current scale |
 | Message broker / external job queue | IF-DEC-17 | No demonstrated requirement; adds distributed infrastructure (SAD P7) |
 | Full observability stack | IF-DEC-18 | Disproportionate; risks implying SLAs NFR-REL-008 says don't exist |
+| Stateless tokens (JWT) for MVP authentication | IF-DEC-19 | Revocation machinery needed for FR-AUTH-005 AC2 / FR-USER-002 AC3; no third-party consumer or scaling requirement (SAD P7) |
+| External identity provider | IF-DEC-19 | No MVP requirement or integration exists (SAD §3.3; also IF-DEC-04) |
+| Mandatory password character classes; permanent account lockout | IF-DEC-19 | Rejected by approver: length-only policy; rate limiting without lockout |
 
 ## 10. Traceability
 
@@ -325,7 +351,7 @@ Consolidated view across §4–§5 (each entry's reasoning appears with its deci
 | IF-DEC-01 | NFR-MNT-001; NFR-MNT-002; PRD §11.2, §14.1 | Restates confirmed baseline |
 | IF-DEC-02 | PRD §11.2, §12; SRS-IF-01 | Restates confirmed baseline |
 | IF-DEC-03 | PRD §11.2; NFR-MNT-002; SRS §5.2 | Restates confirmed baseline |
-| IF-DEC-04 | PRD §11.2; FR-AUTH-003; FR-AUTH-004; NFR-SEC-001; NFR-SEC-002; NFR-SEC-009 | Framework only; OD-15 remains |
+| IF-DEC-04 | PRD §11.2; FR-AUTH-003; FR-AUTH-004; NFR-SEC-001; NFR-SEC-002; NFR-SEC-009 | Framework only; mechanics now decided as IF-DEC-19 (OD-15 closed 2026-10-18) |
 | IF-DEC-05 | PRD §11.2; SRS-IF-06; SRS-IF-07; NFR-DAT-001; NFR-DAT-002 | Datastore only; hosting open |
 | IF-DEC-06 | PRD §11.2; SRS-IF-06; NFR-REL-002; NFR-PERF-004 | Restates confirmed baseline |
 | IF-DEC-07 | FR-DOC-007; NFR-SEC-004; SRS-IF-11; SRS-IF-12; SRS-FR-008 | Category confirmed; vendor open |
@@ -340,6 +366,7 @@ Consolidated view across §4–§5 (each entry's reasoning appears with its deci
 | IF-DEC-16 | NFR-DAT-008; NFR-DAT-002; FR-REPORT-006; SRS-ERR-007; NFR-REL-003 | **No** — approved at Stage 1.6 |
 | IF-DEC-17 | PRD §11.1, §5.2, §14.1; SRS §3.4; SRS-IF-14; NFR-REL-004 | **No** — approved at Stage 1.6 (bounded); OD-09 remains |
 | IF-DEC-18 | NFR-REL-008; NFR-SEC-003; NFR-SEC-008; PRD §12 | **No** — approved at Stage 1.6; no SLA/retention invented |
+| IF-DEC-19 | FR-AUTH-001; FR-AUTH-002; FR-AUTH-005; FR-AUTH-006; FR-USER-001; FR-USER-002; NFR-SEC-003; NFR-SEC-009 | **No** — approved at Stage 2.1 by product-owner decision; closes OD-15; implementation deferred |
 
 ### 10.2 Requirement → decisions that consume it
 
@@ -355,7 +382,7 @@ Consolidated view across §4–§5 (each entry's reasoning appears with its deci
 | NFR-DAT-001 … NFR-DAT-009 | IF-DEC-05, IF-DEC-13, IF-DEC-16 |
 | NFR-REL-001 … NFR-REL-008 | IF-DEC-05, IF-DEC-15, IF-DEC-17, IF-DEC-18 |
 | NFR-MNT-001 … NFR-MNT-006 | IF-DEC-01, IF-DEC-11 |
-| OD-01 … OD-16 | §7 — all remain open |
+| OD-01 … OD-16 | §7 — OD-15 closed (IF-DEC-19); all others remain open |
 
 ### 10.3 Cross-document consistency
 
@@ -368,19 +395,19 @@ Consolidated view across §4–§5 (each entry's reasoning appears with its deci
 
 ## 11. Review Checklist and Approval Status
 
-**Overall status: Draft — Pending Review. This record approves nothing by itself.** Approvals made at human review (currently the Stage 1.6 disposition in §11.3) are recorded from the reviewer, not granted by this document; document-level approval and the two Open entries remain outstanding.
+**Overall status: Draft — Pending Review. This record approves nothing by itself.** Approvals made at human review (currently the Stage 1.6 and Stage 2.1 dispositions in §11.3) are recorded from the reviewer, not granted by this document; document-level approval and the two Open entries remain outstanding.
 
-### 11.1 Automated consistency checks (executed 2026-10-15; re-executed 2026-10-17 at the Stage 1.6 review)
+### 11.1 Automated consistency checks (executed 2026-10-15; re-executed 2026-10-17 at the Stage 1.6 review; re-executed 2026-10-18 at the Stage 2.1 review)
 
 | # | Check | Result |
 |---|---|---|
 | 1 | Every `IF-DEC-nn` referenced in `SAD.md` and `DDD.md` exists in this register with the same meaning | **Pass** — IF-DEC-07, 12, 13, 14 (API versioning), 15, 16, 17, 18 consistent across all three documents |
 | 2 | Every requirement ID cited in this record (`FR-*`, `SRS-*`, `NFR-*`, `PR-*`, `OD-*`, `AS-*`) resolves in `docs/requirements/` | **Pass** (programmatically checked; see the note below) |
-| 3 | All 16 FRD open decisions OD-01 … OD-16 are represented in §7 and none is marked resolved | **Pass** |
+| 3 | All 16 FRD open decisions OD-01 … OD-16 are represented in §7; none is marked resolved except OD-15 (closed 2026-10-18 by product-owner approval, recorded as IF-DEC-19) | **Pass** (2026-10-18) |
 | 4 | AS-01/AS-02/AS-03 statements match FRD §9.3 verbatim in meaning and citation | **Pass** |
 | 5 | No invented retention period, SLA/uptime target, reporting cadence, compliance value, or endpoint contract appears | **Pass** — open items named in §6 instead |
 | 6 | Role boundaries preserved: no admin report-approval or completion authority; faculty-only weekly-report approval; five states with FRD §5.2 transitions only | **Pass** (§2 restates; no decision alters them) |
-| 7 | Register counts match §3 header counts (10 Confirmed, 6 Approved, 2 Open) | **Pass** |
+| 7 | Register counts match §3 header counts (10 Confirmed, 7 Approved, 2 Open) | **Pass** (2026-10-18) |
 
 Programmatic check #2 was run over all `FR-`, `SRS-`, `NFR-`, `PR-`, `OD-`, `AS-`, and `IF-DEC-` identifiers in this file against the identifier sets in `docs/requirements/FRD.md`, `docs/requirements/SRS.md`, and `docs/requirements/PRD.md`; unresolved identifiers: **none**. (If this file is edited later, re-run the same check.)
 
@@ -394,6 +421,7 @@ Programmatic check #2 was run over all `FR-`, `SRS-`, `NFR-`, `PR-`, `OD-`, `AS-
 | 4 | Confirm §7's interaction notes do not overstate or resolve any OD-01 … OD-16 | **Yes** |
 | 5 | Confirm the AS-01/AS-02/AS-03 dependency note in §8 | Yes — accepted at the Stage 1.6 review (2026-10-17); further confirmation optional |
 | 6 | Decide whether a versioning recommendation should be prepared for the API Specification (IF-DEC-14) | No — may stay open |
+| 7 | ~~Decide OD-15 (authentication mechanics) on the basis of the Stage 2.1 analysis in `docs/reviews/STAGE-2.1-REVIEW.md` §4/§8~~ **Completed at the Stage 2.1 review (2026-10-18):** the product owner approved the proposed package; recorded as IF-DEC-19 (§5); OD-15 closed | No — resolved |
 
 ### 11.3 Approval
 
@@ -403,5 +431,7 @@ Programmatic check #2 was run over all `FR-`, `SRS-`, `NFR-`, `PR-`, `OD-`, `AS-
 | Development lead | _pending_ | _pending_ | _pending_ |
 
 **Stage 1.6 planning review disposition (2026-10-17):** the six formerly Proposed decisions **IF-DEC-12, IF-DEC-13, IF-DEC-15, IF-DEC-16, IF-DEC-17, and IF-DEC-18 were approved** with the boundaries recorded in §5 (review action 1 resolved), and the AS-01/AS-02/AS-03 dependency note in §8 was accepted (review action 5). Review actions 2, 3, 4, and 6 remain pending, as do the two Open entries (IF-DEC-10, IF-DEC-14) and all FRD §9 open decisions. This partial disposition does **not** constitute document-level approval; the rows above stay _pending_.
+
+**Stage 2.1 review disposition (2026-10-18):** the product owner **approved the authentication-mechanics package** requested in `docs/reviews/STAGE-2.1-REVIEW.md` §8, with the recorded values listed in IF-DEC-19 (§5). This closes FRD open decision **OD-15** (review action 7 resolved) and records IF-DEC-19 as an Approved decision. Numeric rate-limiting thresholds and the exact cookie `SameSite` value were not specified by the approver and remain implementation details to be documented, not approved values. All other Open entries (IF-DEC-10, IF-DEC-14) and all other FRD open decisions (OD-01 … OD-14, OD-16) remain open. This disposition does **not** constitute document-level approval; the rows above stay _pending_.
 
 *End of document — status: Draft, pending human review.*
