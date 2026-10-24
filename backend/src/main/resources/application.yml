@@ -4,9 +4,10 @@
 # that credentials and local settings stay outside tracked source files
 # (NFR-SEC-008). Defaults below are safe local placeholders only.
 #
-# No database migrations and no JPA entities exist yet: the database design
-# (docs/architecture/DDD.md) is still a draft and several schema decisions
-# (OD-02, OD-03 and others) are unresolved.
+# Stage 3.1 introduces the first versioned schema migration for the Stage 3 core
+# tables (users, cohorts, memberships, faculty assignments, companies,
+# internships). Later tables remain deferred while OD-02/OD-03/etc. are open;
+# see docs/architecture/DDD.md section 15 and IF-DEC-20.
 
 spring:
   application:
@@ -19,13 +20,19 @@ spring:
     url: ${INTERNFLOW_DB_URL:jdbc:postgresql://localhost:5432/internflow}
     username: ${INTERNFLOW_DB_USERNAME:internflow}
     password: ${INTERNFLOW_DB_PASSWORD:}
+  flyway:
+    # Versioned migrations are the only schema authority (IF-DEC-20). A live
+    # PostgreSQL database is therefore required to start the application.
+    # Tests disable this via the Maven Surefire system property.
+    enabled: ${INTERNFLOW_FLYWAY_ENABLED:true}
+    locations: classpath:db/migration
+    baseline-on-migrate: false
+    validate-on-migrate: true
   jpa:
-    # No entities exist yet. "none" keeps Hibernate from touching the database;
-    # revisit together with the schema design (IF-DEC-06).
+    # Hibernate never creates or alters the schema. Entity mappings will use
+    # validate once Stage 3 entities exist.
     hibernate:
       ddl-auto: ${INTERNFLOW_JPA_DDL_AUTO:none}
-    # Specified explicitly so the application context can start without a live
-    # database connection (useful before PostgreSQL is provisioned).
     database-platform: org.hibernate.dialect.PostgreSQLDialect
     open-in-view: false
 

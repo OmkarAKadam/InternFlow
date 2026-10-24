@@ -34,8 +34,9 @@
             <artifactId>spring-boot-starter-security</artifactId>
         </dependency>
 
-        <!-- Included per the confirmed stack (IF-DEC-06). No entities or migrations exist yet;
-             the database design (DDD.md) is still a draft. -->
+        <!-- Included per the confirmed stack (IF-DEC-06). Stage 3.1 adds the
+             first schema migration for the Stage 3 core tables; see
+             src/main/resources/db/migration and IF-DEC-20. -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-data-jpa</artifactId>
@@ -44,6 +45,17 @@
             <groupId>org.postgresql</groupId>
             <artifactId>postgresql</artifactId>
             <scope>runtime</scope>
+        </dependency>
+
+        <!-- Versioned schema migrations (IF-DEC-20). flyway-database-postgresql
+             is required by Flyway 10+ for PostgreSQL support. -->
+        <dependency>
+            <groupId>org.flywaydb</groupId>
+            <artifactId>flyway-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.flywaydb</groupId>
+            <artifactId>flyway-database-postgresql</artifactId>
         </dependency>
 
         <dependency>
@@ -58,6 +70,19 @@
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <!-- Existing context tests do not provision PostgreSQL. Unit
+                         tests must remain runnable without a database; the real
+                         migration is verified by Stage3SchemaMigrationTest when a
+                         disposable database is supplied (see docs/development/SETUP.md). -->
+                    <systemPropertyVariables>
+                        <spring.flyway.enabled>false</spring.flyway.enabled>
+                    </systemPropertyVariables>
+                </configuration>
             </plugin>
         </plugins>
     </build>

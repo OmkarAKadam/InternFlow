@@ -11,12 +11,12 @@
 | Document Identifier | IF-DOC-DDD-001 |
 | Version | 1.0 |
 | Status | Draft — Pending Review (not approved) |
-| Last Updated | 2026-10-17 |
+| Last Updated | 2026-10-22 |
 | Purpose | Define the initial PostgreSQL data model for the InternFlow MVP: entity inventory, table definitions, relationships and cardinality, constraints and indexes, transaction and concurrency expectations, and audit/compliance/storage data structures — derived from and traceable to the PRD, FRD, and SRS, while preserving unresolved domain decisions. |
 | Related Source Documents | PRD v1.0 — `docs/requirements/PRD.md` (baseline commit `9f91303`); FRD v1.0 — `docs/requirements/FRD.md` (commit `c8b8754`); SRS v1.0 — `docs/requirements/SRS.md` (commit `7ffeecc`). Companion deliverables: `docs/architecture/SAD.md` (System Architecture Document), `docs/architecture/DECISIONS.md`. |
 | Intended Audience | Project reviewer/stakeholder; the development team; authors of the API Specification, Security Requirements, and Test Plan. |
 
-**Review note:** This document is a draft pending human review and must not be treated as approved. **No migrations are created and no schema changes are executed in this substage.** This document resolves no open decision; where the source documents leave a domain question open, the alternatives and the decision needed are recorded instead of a choice being made silently.
+**Review note:** This document is a draft pending human review and must not be treated as approved. **At the time of the original draft no migrations were created and no schema changes were executed.** That remained true through Stage 2. At **Stage 3.1 (2026-10-22)** the first physical baseline was added: `backend/src/main/resources/db/migration/V1__create_stage3_core_tables.sql` creates the six tables scoped by **IF-DEC-22** (users, cohorts, cohort_memberships, cohort_coordinator_assignments, companies, internships). §15 maps that migration to this design, records the deviations and the tables that remain deferred, and is the authoritative statement of what is actually implemented. This document resolves no open decision; where the source documents leave a domain question open, the alternatives and the decision needed are recorded instead of a choice being made silently.
 
 **Status conventions** (consistent with FRD §2.4 and SRS §2.6): **Confirmed** (established by PRD/FRD/SRS, source cited), **Derived** (follows necessarily; flagged for review), **Proposed** (a physical schema choice this document offers because a schema must exist; requires review), **Open decision (OD-xx)** (FRD §9, carried unchanged), **Assumption (AS-xx)** (FRD §9.3; not approved). Where a formerly **Proposed** item was approved at the Stage 1.6 planning review it is labeled **Approved** (IF-DEC-xx), with its boundaries recorded in `DECISIONS.md` §5; approval is an architectural direction, not a requirements-baseline promotion. Confirmed domain requirements are stated separately from proposed physical choices wherever they could be confused.
 
@@ -36,6 +36,7 @@
 - [12. Data Integrity, Privacy, and Security](#12-data-integrity-privacy-and-security)
 - [13. Data Dictionary and ER Model](#13-data-dictionary-and-er-model)
 - [14. Traceability](#14-traceability)
+- [15. Stage 3.1 Migration Baseline](#15-stage-31-migration-baseline)
 
 ## 2. Database Design Principles
 
@@ -82,6 +83,7 @@ Derived from the PRD scope (PRD §7.1), the FRD functional requirements (FRD §6
 | 12 | `completion_verifications` | The verification record: internship, verifier, timestamp, requirement-results snapshot. | **Required**; cardinality **Open** (OD-08) | FR-COMPLETE-003/008; SRS-DR-007 |
 | 13 | `notifications` | Per-recipient in-app notification with read status and email delivery status. | **Required** | PRD §7.1.10; FR-NOTIF-004/005/007 |
 | 14 | `audit_events` | Immutable (application-level) record of important actions: event type, actor/system, entity, timestamp, before/after values. | **Required**; event set partly **Open** (OD-06) | PRD §7.1.12; FR-AUDIT-001…005 |
+| 15 | `companies` | Minimal host-organisation reference for internship records: name, status, attribution. | **Proposed** — Stage 3.1 addition (IF-DEC-21) | FR-INT-001/008; SRS-IF-07 |
 
 **Concepts deliberately not given a table:**
 
@@ -111,15 +113,15 @@ Purpose: store accounts, their single MVP role, and account status; the identity
 | `role` | text | No | CHECK `role IN ('STUDENT','FACULTY_COORDINATOR','COLLEGE_ADMINISTRATOR')` | Conf. (values) / Proposed (type) | Three MVP roles only (FR-USER-002); single role per user (**AS-04**) — a combined-role future would require a schema change (flagged, not designed). |
 | `account_status` | text | No | DEFAULT `'ACTIVE'`; CHECK `IN ('ACTIVE','DEACTIVATED')` | Conf. (concept) | Deactivation preserves all records/attribution; no deletion (FR-USER-005, PR-08). |
 | `activation_state` | text | No | DEFAULT `'PENDING'`; CHECK `IN ('PENDING','ACTIVATED')` | Approved (IF-DEC-19, 2026-10-18) | Creation is distinct from activation; unactivated accounts cannot sign in (FR-USER-001, FR-AUTH-001 AC4). Mechanics approved: administrator-set temporary password with mandatory change at first login (IF-DEC-19, closing OD-15). |
-| `credential_hash` | text | Yes | — | Approved (IF-DEC-19, 2026-10-18) | BCrypt hash; nullable until the temporary credential is set/activated. Policy: minimum 12 characters, no mandatory character classes (IF-DEC-19). Sensitive: never logged/audited (§12). |
+| `must_change_password` | boolean | No | DEFAULT `TRUE` | Approved (IF-DEC-19, 2026-10-18) | Administrator-set temporary password must be changed at first login; accounts that have not completed this cannot operate beyond the mandatory change (FR-USER-001; OD-15 closed). |
 | `contact_email` | text | Yes | — | Proposed (PR-06) | Notification target (FR-NOTIF-005) — may equal `identity`; separation is a proposed self-service field (PR-06). |
 | `contact_phone` | text | Yes | — | Proposed (PR-06) | Optional profile field. |
 | `created_at` | timestamptz | No | — | Proposed | |
 | `updated_at` | timestamptz | No | — | Proposed | |
 
-- **Keys/constraints:** PK `id`; UNIQUE `identity`; role and status CHECKs.
+- **Keys/constraints:** PK `id`; UNIQUE `identity`; role, status, activation_state, and must_change_password defaults as designed; CHECKs on role/status/activation_state.
 - **Indexes:** UNIQUE(identity) serves sign-in lookup; `role` index only if role-filtered listings show measurable need (not added speculatively).
-- **Sensitive data:** `credential_hash` (if used) is credential material — excluded from all DTOs, logs, and audit payloads (§12). Open decisions affecting this table: **OD-01** (self-role-change/self-deactivation). (OD-15 was closed 2026-10-18 by IF-DEC-19.)
+- **Sensitive data:** `credential_hash` (if used) is credential material — excluded from all DTOs, logs, and audit payloads (§12). `must_change_password` is a first-login activation flag tied to the approved temporary-password flow (IF-DEC-19); the password-change API and enforcement are not implemented in Stage 3.1. Open decisions affecting this table: **OD-01** (self-role-change/self-deactivation). (OD-15 was closed 2026-10-18 by IF-DEC-19.)
 - **Deletion:** no MVP operation deletes users (FR-USER-005; PR-08 covers records; user deletion is an open question — FRD §4.2.2 marks it Open under OD-01).
 
 ### 4.2 `cohorts`
@@ -640,6 +642,7 @@ Labels on relationships mark the assumptions and open decisions: **AS-01** (one 
 | `completion_verifications` (snapshot, authority) | §7.1.11, §8 step 9, §11.1 | FR-COMPLETE-001…008; OD-08 | §8.1 (SRS-DR-007), §9.3 (SRS-WF-017…022) |
 | `notifications` (dedup, read status, privacy) | §7.1.10 | FR-NOTIF-001…007 | §7.3 (NFR-REL-004/006), §7.9 |
 | `audit_events` (atomicity, immutability) | §7.1.12 | FR-AUDIT-001…006 | §7.8 (NFR-AUD-001…006) |
+| `companies` (Stage 3.1 addition, IF-DEC-21) | §7.1.3 | FR-INT-001/008; OD-12 (field catalogue open) | §8.1 (SRS-DR-002); SRS-IF-07 |
 | Constraints C1–C21 (§10.1) | §12 (data integrity) | FR-USER-006, FR-INT-003, FR-REPORT-006, FR-REVIEW-003, FR-NOTIF-007, PR-08 | §7.7, §8.2 |
 | Transaction rules (§11) | §12 | FR-REVIEW-002, FR-AUDIT-001, FR-COMP-007 | §7.3 (NFR-REL-001…008), §5.2 (SRS-IF-09) |
 | Exports (no table) | §7.1.13 | FR-EXPORT-001…008 | §7.7 (NFR-PRV-002) |
@@ -661,6 +664,62 @@ Labels on relationships mark the assumptions and open decisions: **AS-01** (one 
 | Diagram agrees with entity definitions | **Pass (manual inspection)** | §13.1 entities/relationships match §4/§5; checked in Stage 1.4 review report. |
 | Source documents unmodified | **Pass** | Git status shows only new files under `docs/architecture/`. |
 
+## 15. Stage 3.1 Migration Baseline
+
+**Status:** Implemented and locally verified (2026-10-22); pending Stage 3.1 review. Scope decision: **IF-DEC-22**; migration authority: **IF-DEC-20**; `companies` addition: **IF-DEC-21**.
+
+This section is the authoritative record of the schema that actually exists. Where it differs from the earlier design sections, this section wins for the current implementation; earlier sections remain the design rationale and the target for later substages.
+
+### 15.1 Migration inventory
+
+| Migration | Purpose | Tables created |
+|---|---|---|
+| `V1__create_stage3_core_tables.sql` | First physical baseline for Stage 3 user/cohort/internship management | `users`, `cohorts`, `cohort_memberships`, `cohort_coordinator_assignments`, `companies`, `internships` |
+
+Conventions applied: `snake_case` plural tables and columns; `BIGINT GENERATED BY DEFAULT AS IDENTITY` primary keys; `timestamptz` for instants and `date` for date-only values; `text` + `CHECK` for enumerations; `<referenced_table>_id` foreign keys; **every** foreign key `ON DELETE RESTRICT`.
+
+### 15.2 Implemented constraints
+
+| Table | Enforced at persistence | Notes / source |
+|---|---|---|
+| `users` | PK; `UNIQUE(identity)`; identity = `lower(btrim(identity))` and ≤254 chars; non-blank `display_name`; role in `STUDENT`, `FACULTY_COORDINATOR`, `COLLEGE_ADMINISTRATOR`; account status in `ACTIVE`, `DEACTIVATED`; activation state in `PENDING`, `ACTIVATED` | AS-04 single role; FR-USER-001/002/005/006; IF-DEC-19. `credential_hash` is nullable and never part of an API representation. |
+| `cohorts` | PK; `UNIQUE(cohort_code)`; code/name non-blank; status in `ACTIVE`, `INACTIVE`; `period_start`/`period_end` both present or both absent; `period_end >= period_start`; `created_by`/`updated_by` FKs | FR-COHORT-001/005; deadline values remain **OD-10** and are not encoded. |
+| `cohort_memberships` | PK; FKs to student, cohort and creator; `left_at >= joined_at`; partial `UNIQUE(student_user_id) WHERE left_at IS NULL`; index `(cohort_id, joined_at)` | AS-02; FR-COHORT-002. Active = `left_at IS NULL`. |
+| `cohort_coordinator_assignments` | PK; FKs; `unassigned_at >= assigned_at`; partial `UNIQUE(cohort_id, faculty_user_id) WHERE unassigned_at IS NULL`; partial `UNIQUE(cohort_id) WHERE is_primary AND unassigned_at IS NULL`; index on active faculty | FR-COHORT-003; AS-03. Additional non-primary coordinators are allowed. |
+| `companies` | PK; non-blank name ≤200 chars; `UNIQUE(lower(name))`; status in `ACTIVE`, `INACTIVE`; creator/updater FKs | IF-DEC-21; minimal by design — no contacts, industry, location or mentor. |
+| `internships` | PK; FKs to student, cohort, company and creator; `end_date >= start_date`; lifecycle in `REGISTERED`, `VERIFIED_COMPLETE`; partial `UNIQUE(student_user_id) WHERE lifecycle_state = 'REGISTERED'`; indexes on cohort and company | FR-INT-001/002/003/004; AS-01; full state set remains **OD-12**. `company_id` is nullable. |
+
+### 15.3 Deliberate deviations from the earlier design sections
+
+1. **`companies` is new** (§3 row 15, IF-DEC-21). It was not in the original inventory; no company fields beyond name/status/attribution were invented.
+2. **`internships.company_id`** is a nullable FK; no company name is denormalized onto the internship.
+3. **Identity normalization** is enforced in the database (`lower(btrim(identity))`), not only in application code. This makes uniqueness case-insensitive and prevents stored whitespace variants.
+4. **Cohort period pairing** is stricter than §4.2: a start without an end (or vice versa) is rejected. This avoids ambiguous "applicable period" data; it does not decide any open deadline policy.
+5. **No version columns** were added to these six tables. IF-DEC-16's optimistic locking remains scoped to workflow concurrency (reports/reviews); Stage 3.1 does not expose an `If-Match`/version contract. If concurrent internship edits require it in Stage 3.2+, a forward migration adds the column.
+6. **All foreign keys use RESTRICT.** PostgreSQL 18 reports a RESTRICT violation as SQLSTATE `23001` (`restrict_violation`), whereas earlier versions report `23503` (`foreign_key_violation`). Application error mapping and the migration test accept both.
+
+### 15.4 Tables deliberately deferred
+
+| Table | Blocking open decision (at minimum) | Where it will be added |
+|---|---|---|
+| `cohort_requirements` | OD-03 (ownership/change propagation), OD-05 (document categories) | Cohort/requirements substage |
+| `weekly_reports` | OD-02 (approved-report modification), OD-10 (reporting cadence/deadlines) | Weekly reports substage |
+| `report_events` | OD-02 | Review workflow substage |
+| `documents`, `document_reviews` | OD-05, OD-16 | Document substage |
+| `requirement_evaluations` | OD-03, OD-04 | Compliance substage |
+| `completion_verifications` | OD-08 | Completion substage |
+| `notifications` | OD-09, OD-11 | Notifications substage |
+| `audit_events` | OD-06, OD-11 | Cross-cutting audit substage |
+
+`cohorts.deadline_config` exists as nullable `jsonb` but its keys and semantics are **not** defined; it is a placeholder for OD-10, not a policy.
+
+### 15.5 Verification performed
+
+- Flyway applied `V1` to a fresh PostgreSQL 18.3 database both through the application startup path and through the opt-in `Stage3SchemaMigrationTest` (isolated schema, dropped afterwards).
+- The test verifies table creation, unique/check enforcement, the AS-01/AS-02/AS-03 partial unique indexes, date ordering, and RESTRICT foreign keys.
+- The default `mvn test` remains database-independent: Flyway is disabled for Surefire and the migration test is skipped unless `INTERNFLOW_TEST_DB_URL` is set (see `docs/development/SETUP.md` §6).
+- **Not verified / out of scope:** JPA entity mappings (`ddl-auto` is `none`; no entities exist yet), authentication integration from the Stage 2 branch, production PostgreSQL hosting, backup/restore, and any Stage 3.2 behavior.
+
 ---
 
-*End of draft. This document is pending human review. No migrations have been created or executed; OD-02 and OD-03 are explicitly required to be resolved before this design is treated as final (FRD §9.1).*
+*End of draft. This document is pending human review. The Stage 3.1 migration exists (§15); the remaining schema (weekly reports, documents, compliance, completion, notifications, audit) is not created and OD-02 and OD-03 remain explicitly required to be resolved before this design is treated as final (FRD §9.1).*
