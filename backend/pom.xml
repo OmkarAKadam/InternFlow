@@ -27,11 +27,24 @@
             <artifactId>spring-boot-starter-web</artifactId>
         </dependency>
 
-        <!-- Included per the confirmed stack (IF-DEC-04). Only a minimal, deny-by-default
-             placeholder configuration exists; authentication mechanics are open (OD-15). -->
+        <!-- Included per the confirmed stack (IF-DEC-04). Stage 2.3 added the
+             session-based authentication foundation (com.internflow.auth): a
+             deny-by-default filter chain, BCrypt, CSRF protection, server-managed
+             sessions, and provisional sign-in/sign-out endpoints. Persisted
+             accounts, an approved API contract, and end-to-end login do NOT exist
+             yet (OD-02/OD-03 block the first migration), so this is a foundation,
+             not a complete login system. -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-security</artifactId>
+        </dependency>
+
+        <!-- Server-side request validation for the API boundary (SRS-IF-03; SAD §6
+             mandates bean validation for input shape). Required for the authentication
+             request DTOs; later modules reuse it for their DTOs. -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-validation</artifactId>
         </dependency>
 
         <!-- Included per the confirmed stack (IF-DEC-06). No entities or migrations exist yet;

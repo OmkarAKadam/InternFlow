@@ -185,12 +185,22 @@ backend/
 └── src/
     ├── main/
     │   ├── java/com/internflow/
-    │   │   ├── InternFlowApplication.java     # Spring Boot entry point
-    │   │   └── shared/                        # Cross-cutting foundation only
-    │   │       ├── config/SecurityConfig.java # Placeholder, deny-by-default
-    │   │       └── health/HealthController.java
-    │   └── resources/application.yml          # Base configuration (env-var driven)
-    └── test/java/com/internflow/InternFlowApplicationTests.java
+    │   │   ├── InternFlowApplication.java        # Spring Boot entry point
+    │   │   ├── auth/                             # Stage 2.3 session-based security
+    │   │   │   ├── SecurityConfig.java           # Deny-by-default chain, BCrypt, session/CSRF
+    │   │   │   ├── SignInController.java         # Provisional sign-in/out endpoints
+    │   │   │   ├── SignInService.java            # Sign-in orchestration + fixation protection
+    │   │   │   ├── SignInRequest.java / SignInOutcome.java
+    │   │   │   ├── UnauthenticatedEntryPoint.java
+    │   │   │   ├── CsrfCookieFilter.java
+    │   │   │   └── AbsoluteSessionLifetimeFilter.java
+    │   │   └── shared/                           # Cross-cutting foundation
+    │   │       ├── config/ClockConfig.java       # Injectable Clock (absolute lifetime)
+    │   │       └── health/HealthController.java  # GET /api/health (public)
+    │   └── resources/application.yml             # Env-var driven (DB, session, cookie)
+    └── test/java/com/internflow/
+        ├── InternFlowApplicationTests.java
+        └── auth/                                 # Stage 2.3 security test suite
 ```
 
 **Planned module layout.** The 13 MVP modules will live as packages under
@@ -203,16 +213,45 @@ rather than merged into `reports` (Stage 1.5 choice, proposed).
 
 ### Security status — read this before assuming anything is protected
 
-Spring Security is on the classpath because it is part of the confirmed stack
-(IF-DEC-04), but **no authentication or authorization mechanism is implemented**.
-`SecurityConfig` currently:
+Stage 2.3 implements the **approved authentication foundation** (IF-DEC-19,
+`docs/architecture/DECISIONS.md`) as a server-managed session model. The security
+filter chain in `com.internflow.auth.SecurityConfig` is deny-by-default and now:
 
-- permits `GET /api/health` only, and
-- requires authentication for every other request (deny-by-default),
-- disables CSRF and creates no sessions, because no session/token mechanism
-  exists yet.
+- permits `GET /api/health` and the provisional `POST /api/auth/sign-in` /
+  `POST /api/auth/sign-out`, plus ERROR-dispatch requests,
+- requires authentication for every other request,
+- uses **BCrypt** for password hashing,
+- keeps **CSRF protection enabled** with an HttpOnly-off cookie token
+  (`XSRF-TOKEN`) echoed in the `X-XSRF-TOKEN` header,
+- creates server-managed sessions with an HttpOnly session cookie,
+  session-fixation migration on sign-in, a 30-minute idle timeout and an 8-hour
+  absolute lifetime, and
+- sets the session cookie `Secure` in production (`INTERNFLOW_COOKIE_SECURE=true`).
 
-All authentication mechanics were an **open decision (OD-15)**; the mechanics were **approved on 2026-10-18** (IF-DEC-19 in `docs/architecture/DECISIONS.md`: server-managed sessions, HttpOnly cookie, CSRF, email identity, BCrypt, and the approved policy values) but **are not implemented yet**. This configuration remains a development placeholder, not a production security posture, until a later Stage 2 substage implements the approved design.
+**What is NOT yet real:** there are **no persisted accounts** and **no approved
+API contract**. Persistence is blocked by the unresolved database decisions
+(OD-02, OD-03 → FRD §9.1), so production sign-in cannot succeed; the sign-in
+endpoint answers an explicit `503 sign-in-not-configured` state rather than
+pretending to verify credentials. The `/api/auth/*` paths and payload/error shapes
+are a **provisional proposal, not an approved contract** — they are documented in
+`docs/reviews/STAGE-2.3-REVIEW.md` and must not be treated as final. The frontend
+login form is deliberately **not connected** to these endpoints. Failed-login rate
+limiting and the forced password change on first login are **not implemented**
+(their thresholds and flows are still unresolved) and are not faked.
+
+**Production session-cookie safeguard.** `com.internflow.auth.ProductionSessionCookieGuard`
+fails application startup when the Spring profile `prod` or `production` is active
+and the **effective** `server.servlet.session.cookie.secure` value is not `true`.
+Set `INTERNFLOW_COOKIE_SECURE=true` (or `server.servlet.session.cookie.secure=true`)
+for such deployments. Local development over plain HTTP may keep the default
+`false` because no production profile is active. The guard reads the bound Spring
+Boot configuration rather than the environment variable directly, so any
+configuration source is honoured. It recognizes **only** the profile names `prod`
+and `production`; a deployment must reliably activate one of them for the
+safeguard to run. The guard is a configuration check, not a TLS validator: it does
+**not** verify TLS termination, `X-Forwarded-Proto`/forwarded-header handling,
+reverse-proxy configuration, or HSTS. Those remain deployment responsibilities,
+and the final `SameSite` value still depends on IF-DEC-10.
 
 ---
 
@@ -239,6 +278,10 @@ Expected environment variables (all optional locally; defaults in parentheses):
 | `INTERNFLOW_DB_PASSWORD`    | Database password (**never committed**)             | *(empty)*                                        |
 | `INTERNFLOW_JPA_DDL_AUTO`   | Hibernate DDL mode (keep `none`/`validate`)         | `none`                                           |
 | `SERVER_PORT`               | HTTP port                                           | `8080`                                           |
+| `INTERNFLOW_SESSION_IDLE_TIMEOUT`      | Session idle timeout (container-enforced)  | `30m`                                   |
+| `INTERNFLOW_SESSION_ABSOLUTE_LIFETIME` | Absolute session lifetime (app-enforced)   | `PT8H`                                  |
+| `INTERNFLOW_COOKIE_SECURE`             | Session cookie `Secure` flag (**`true` on TLS**; startup fails under an active `prod`/`production` profile if not `true`) | `false` |
+| `INTERNFLOW_COOKIE_SAMESITE`           | Session cookie `SameSite` (**provisional**, re-decide with IF-DEC-10) | `lax` |
 
 Example (PowerShell, current session only):
 
@@ -288,7 +331,7 @@ they contain placeholders only.
 | `java -version` shows an older JDK | The backend targets Java 21. Install JDK 21+ and point `JAVA_HOME` at it. |
 | Frontend `npm install` fails | Check network/proxy access to the npm registry, then retry. |
 | Port already in use | Change the port: `npm run dev -- -p 3001`, or set `SERVER_PORT` for the backend. |
-| Backend starts but data endpoints fail | Expected: no authentication and no schema exist yet. Only `/api/health` is reachable. |
+| Backend starts but data endpoints fail | Expected: no schema exists yet, and most endpoints require an authenticated session that cannot yet be created (no persisted accounts). Only `/api/health` is reachable anonymously. |
 | Database errors when adding entities later | PostgreSQL is not configured yet; set the `INTERNFLOW_DB_*` variables and revisit the schema design. |
 
 ---
@@ -296,7 +339,16 @@ they contain placeholders only.
 ## 9. What Is Deliberately Not Implemented Yet
 
 Per Stage 1.5 scope, none of the following exist and none should be added without
-the corresponding stage: user registration/login, JWT or session authentication,
-role-management logic, internship or cohort CRUD, weekly reports, faculty review
-workflows, document uploads, compliance calculation, notifications, completion
-verification, database migrations, and JPA entities for the proposed schema.
+the corresponding stage: user registration, role-management logic, internship or
+cohort CRUD, weekly reports, faculty review workflows, document uploads,
+compliance calculation, notifications, completion verification, database
+migrations, and JPA entities for the proposed schema.
+
+Two authentication items changed in Stage 2.3 but remain **functionally absent**:
+
+- **Session authentication mechanics** are implemented (server-managed session,
+  HttpOnly cookie, CSRF, BCrypt), but there are **no persisted accounts**, so no
+  user can actually sign in (blocked by OD-02/OD-03).
+- **Public registration, JWT tokens, social/OAuth login, failed-login rate
+  limiting, and the forced password-change flow** are still **not implemented**
+  and must not be added without their resolved decisions/stage.

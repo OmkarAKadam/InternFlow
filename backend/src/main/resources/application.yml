@@ -6,13 +6,18 @@
 #
 # No database migrations and no JPA entities exist yet: the database design
 # (docs/architecture/DDD.md) is still a draft and several schema decisions
-# (OD-02, OD-03 and others) are unresolved.
+# (OD-02, OD-03 and others) are unresolved, so they block the first migration
+# (FRD §9.1). Until then no account can exist, and sign-in answers an explicit
+# configuration-missing state instead of pretending to verify credentials
+# (see com.internflow.auth.SignInService and docs/reviews/STAGE-2.3-REVIEW.md).
 
 spring:
   application:
     name: internflow-backend
-  # No authentication mechanism exists yet (OD-15 is open). Disable Spring Boot's
-  # default in-memory user so the application does not appear to offer a login.
+  # No accounts are persisted yet, so Spring Boot's default in-memory user stays
+  # disabled: the application must not appear to offer a login backed by
+  # hardcoded credentials (IF-DEC-19 requires admin-created accounts). A
+  # persisted UserDetailsService replaces this once the first migration lands.
   autoconfigure:
     exclude: org.springframework.boot.autoconfigure.security.servlet.UserDetailsServiceAutoConfiguration
   datasource:
@@ -21,7 +26,7 @@ spring:
     password: ${INTERNFLOW_DB_PASSWORD:}
   jpa:
     # No entities exist yet. "none" keeps Hibernate from touching the database;
-    # revisit together with the schema design (IF-DEC-06).
+    # revisit together with the schema design (OD-02/OD-03, FRD §9.1).
     hibernate:
       ddl-auto: ${INTERNFLOW_JPA_DDL_AUTO:none}
     # Specified explicitly so the application context can start without a live
@@ -31,3 +36,31 @@ spring:
 
 server:
   port: ${SERVER_PORT:8080}
+  servlet:
+    session:
+      # 30-minute idle timeout (IF-DEC-19), enforced by the servlet container as
+      # the inactivity gap between requests.
+      timeout: ${INTERNFLOW_SESSION_IDLE_TIMEOUT:30m}
+      cookie:
+        # IF-DEC-19: the session cookie is HttpOnly (unreadable by JavaScript).
+        http-only: true
+        # IF-DEC-19: Secure in production. The local development default is false
+        # because development serves plain HTTP; every TLS deployment MUST set
+        # INTERNFLOW_COOKIE_SECURE=true, otherwise the cookie is sent in clear text.
+        secure: ${INTERNFLOW_COOKIE_SECURE:false}
+        # PROVISIONAL VALUE - not an approved final decision. IF-DEC-19 requires a
+        # SameSite value chosen for the final deployment topology, which is still
+        # open (IF-DEC-10): a cross-site frontend/backend split will require
+        # "none" together with Secure, while a same-site topology can use "lax"
+        # or "strict". The default below keeps local development working and must
+        # be re-decided with IF-DEC-10, not treated as settled.
+        same-site: ${INTERNFLOW_COOKIE_SAMESITE:lax}
+
+# Authentication session settings (approved in IF-DEC-19).
+internflow:
+  security:
+    session:
+      # 8-hour absolute session lifetime. Servlet containers only enforce the idle
+      # timeout above, so the absolute cap is enforced by
+      # com.internflow.auth.AbsoluteSessionLifetimeFilter using the injected Clock.
+      absolute-lifetime: ${INTERNFLOW_SESSION_ABSOLUTE_LIFETIME:PT8H}
