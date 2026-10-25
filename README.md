@@ -8,12 +8,19 @@ administrators.
 
 ## Current Status
 
-**Stage 1 — Planning and Project Setup (in progress).**
+**Stage 2.4 — Stage Verification (report pending acceptance).**
 
-Requirements and architecture documentation exist in **draft** form under
-`docs/`. A minimal development foundation now exists for both the frontend and
-the backend. **No MVP features are implemented yet**, and no database schema or
-migrations exist.
+Stage 2.3, the authentication backend foundation, is approved with documented
+limitations. The Stage 2.4 verification pass re-ran the backend suite (38/38),
+`mvn -B verify`, and the frontend lint/type checks; results are recorded in
+`docs/reviews/STAGE-2.4-REVIEW.md`.
+
+Authentication is **not production-ready**. No persisted accounts exist
+(OD-02/OD-03), production sign-in returns the documented
+`503 sign-in-not-configured` response, rate limiting and the final `SameSite`
+decision remain unresolved, and the frontend login form is not connected. No
+MVP business features are implemented, and no database schema or migrations
+exist.
 
 ## Repository Layout
 

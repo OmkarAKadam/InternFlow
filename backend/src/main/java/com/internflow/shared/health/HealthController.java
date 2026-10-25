@@ -16,7 +16,8 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 public class HealthController {
 
-    static final String HEALTH_PATH = "/api/health";
+    /** Referenced by the security rules in {@code com.internflow.auth.SecurityConfig}. */
+    public static final String HEALTH_PATH = "/api/health";
 
     @GetMapping(HEALTH_PATH)
     public Map<String, String> health() {
